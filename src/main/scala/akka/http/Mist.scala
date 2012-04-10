@@ -4,10 +4,10 @@
 
 package akka.http
 
-import akka.actor.{ ActorRef, Actor }
+import akka.actor.{ActorRef, Actor}
 import akka.event.EventHandler
 
-import javax.servlet.http.{ HttpServletResponse, HttpServletRequest }
+import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
 import javax.servlet.http.HttpServlet
 import javax.servlet.Filter
 
@@ -15,6 +15,7 @@ import javax.servlet.Filter
  * @author Garrick Evans
  */
 object MistSettings {
+
   import akka.config.Config._
 
   val JettyServer = "jetty"
@@ -34,7 +35,8 @@ object MistSettings {
  * @author Garrick Evans
  */
 object Types {
-  import javax.servlet.{ ServletRequest, ServletResponse }
+
+  import javax.servlet.{ServletRequest, ServletResponse}
 
   /**
    * Represents an asynchronous request
@@ -64,6 +66,7 @@ import Types._
  *
  */
 trait Mist {
+
   import javax.servlet.ServletContext
   import MistSettings._
 
@@ -78,7 +81,7 @@ trait Mist {
   protected var _factory: Option[RequestMethodFactory] = None
 
   /**
-   *   Handles all servlet requests
+   * Handles all servlet requests
    */
   protected def mistify(request: HttpServletRequest,
                         response: HttpServletResponse)(builder: (() ⇒ tAsyncRequestContext) ⇒ RequestMethod) = {
@@ -124,7 +127,8 @@ trait Mist {
  * Async impls currently supported: Servlet3.0, Jetty Continuations
  */
 class AkkaMistServlet extends HttpServlet with Mist {
-  import javax.servlet.{ ServletConfig }
+
+  import javax.servlet.ServletConfig
 
   /**
    * Initializes Mist
@@ -135,11 +139,17 @@ class AkkaMistServlet extends HttpServlet with Mist {
   }
 
   protected override def doDelete(req: HttpServletRequest, res: HttpServletResponse) = mistify(req, res)(_factory.get.Delete)
+
   protected override def doGet(req: HttpServletRequest, res: HttpServletResponse) = mistify(req, res)(_factory.get.Get)
+
   protected override def doHead(req: HttpServletRequest, res: HttpServletResponse) = mistify(req, res)(_factory.get.Head)
+
   protected override def doOptions(req: HttpServletRequest, res: HttpServletResponse) = mistify(req, res)(_factory.get.Options)
+
   protected override def doPost(req: HttpServletRequest, res: HttpServletResponse) = mistify(req, res)(_factory.get.Post)
+
   protected override def doPut(req: HttpServletRequest, res: HttpServletResponse) = mistify(req, res)(_factory.get.Put)
+
   protected override def doTrace(req: HttpServletRequest, res: HttpServletResponse) = mistify(req, res)(_factory.get.Trace)
 }
 
@@ -148,7 +158,8 @@ class AkkaMistServlet extends HttpServlet with Mist {
  * Will be officially supported in a later release
  */
 class AkkaMistFilter extends Filter with Mist {
-  import javax.servlet.{ ServletRequest, ServletResponse, FilterConfig, FilterChain }
+
+  import javax.servlet.{ServletRequest, ServletResponse, FilterConfig, FilterChain}
 
   /**
    * Initializes Mist
@@ -164,14 +175,14 @@ class AkkaMistFilter extends Filter with Mist {
     (req, res) match {
       case (hreq: HttpServletRequest, hres: HttpServletResponse) ⇒
         hreq.getMethod.toUpperCase match {
-          case "DELETE"  ⇒ mistify(hreq, hres)(_factory.get.Delete)
-          case "GET"     ⇒ mistify(hreq, hres)(_factory.get.Get)
-          case "HEAD"    ⇒ mistify(hreq, hres)(_factory.get.Head)
+          case "DELETE" ⇒ mistify(hreq, hres)(_factory.get.Delete)
+          case "GET" ⇒ mistify(hreq, hres)(_factory.get.Get)
+          case "HEAD" ⇒ mistify(hreq, hres)(_factory.get.Head)
           case "OPTIONS" ⇒ mistify(hreq, hres)(_factory.get.Options)
-          case "POST"    ⇒ mistify(hreq, hres)(_factory.get.Post)
-          case "PUT"     ⇒ mistify(hreq, hres)(_factory.get.Put)
-          case "TRACE"   ⇒ mistify(hreq, hres)(_factory.get.Trace)
-          case unknown   ⇒ {}
+          case "POST" ⇒ mistify(hreq, hres)(_factory.get.Post)
+          case "PUT" ⇒ mistify(hreq, hres)(_factory.get.Put)
+          case "TRACE" ⇒ mistify(hreq, hres)(_factory.get.Trace)
+          case unknown ⇒ {}
         }
         chain.doFilter(req, res)
       case _ ⇒ chain.doFilter(req, res)
@@ -186,6 +197,7 @@ class AkkaMistFilter extends Filter with Mist {
 ///////////////////////////////////////////
 
 object Endpoint {
+
   import akka.dispatch.Dispatchers
 
   /**
@@ -193,19 +205,23 @@ object Endpoint {
    */
   val Dispatcher = Dispatchers.fromConfig("akka.http.mist-dispatcher")
 
-  type Hook = Function[String, Boolean]
-  type Provider = Function[String, ActorRef]
+  type Provider = PartialFunction[String, ActorRef]
 
-  case class Attach(hook: Hook, provider: Provider)
-  case class NoneAvailable(uri: String, req: RequestMethod)
+  case class Attach(provider: Provider)
+
+  case class NoneAvailable(req: RequestMethod)
+
 }
 
 /**
  * @author Garrick Evans
  */
-trait Endpoint { this: Actor ⇒
+trait Endpoint {
+  this: Actor ⇒
 
   import Endpoint._
+
+  self.dispatcher = Endpoint.Dispatcher
 
   /**
    * A convenience method to get the actor ref
@@ -214,72 +230,78 @@ trait Endpoint { this: Actor ⇒
 
   /**
    * The list of connected endpoints to which this one should/could forward the request.
-   * If the hook func returns true, the message will be sent to the actor returned from provider.
+   * The message will be sent to the actor defined for uri.
    */
-  protected var _attachments = List[Tuple2[Hook, Provider]]()
+  protected def provide: Provider
 
-  /**
-   *
-   */
-  protected def _attach(hook: Hook, provider: Provider) = _attachments = (hook, provider) :: _attachments
+  //
+  // we expect there to be one root and that it's already been started up
+  // obviously there are plenty of other ways to obtaining this actor
+  //  the point is that we need to attach something (for starters anyway)
+  //  to the root
+  //
+  def parentEndpoint: ActorRef = Actor.registry.actorFor[RootEndpoint].get
 
-  /**
-   * Message handling common to all endpoints, must be chained
-   */
-  protected def handleHttpRequest: Receive = {
-
-    // add the endpoint - the if the uri hook matches,
-    // the message will be sent to the actor returned by the provider func
-    case Attach(hook, provider) ⇒ _attach(hook, provider)
-
-    // dispatch the suspended requests
-    case req: RequestMethod ⇒ {
-      val uri = req.request.getPathInfo
-      val endpoints = _attachments.filter { _._1(uri) }
-
-      if (!endpoints.isEmpty) endpoints.foreach { _._2(uri) ! req }
-      else {
-        self.sender match {
-          case Some(s) ⇒ s reply NoneAvailable(uri, req)
-          case None    ⇒ _na(uri, req)
-        }
-      }
+  //
+  // this is where you want attach your endpoint hooks
+  //
+  override def preStart() {
+    parentEndpoint ! Endpoint.Attach {
+      case uri if provide.isDefinedAt(uri) => self
     }
   }
+
 
   /**
    * no endpoint available - completes the request with a 404
    */
-  protected def _na(uri: String, req: RequestMethod) = {
-    req.NotFound("No endpoint available for [" + uri + "]")
+  protected def noEndpointAvailable(req: RequestMethod) = self.sender match {
+    case Some(sender) => sender reply NoneAvailable(req)
+    case None => req.NotFound("No endpoint available for [" + req.request.getPathInfo + "]")
+  }
+
+
+  protected def dispatchHttpRequest: Receive = {
+    case req: RequestMethod =>
+      val uri = req.request.getPathInfo
+      println(">>> " + uri)
+      provide.lift(uri) match {
+        case Some(endpoint) => endpoint ! req
+        case None ⇒ noEndpointAvailable(req)
+      }
   }
 }
 
 class RootEndpoint extends Actor with Endpoint {
+
   import Endpoint._
   import MistSettings._
-
-  final val Root = "/"
-
-  // use the configurable dispatcher
-  self.dispatcher = Endpoint.Dispatcher
 
   // adopt the configured id
   if (RootActorBuiltin) self.id = RootActorID
 
-  override def preStart() =
-    _attachments = Tuple2((uri: String) ⇒ { uri eq Root }, (uri: String) ⇒ this.actor) :: _attachments
-
-  def recv: Receive = {
-    case NoneAvailable(uri, req) ⇒ _na(uri, req)
-    case unknown                 ⇒ {}
+  protected def attach(provider: Provider) {
+    _providers = _providers orElse provider
   }
 
-  /**
-   * Note that root is a little different, other endpoints should chain their own recv first
-   */
-  def receive = handleHttpRequest orElse recv
+
+  override def preStart() {}
+
+  protected var _providers: Provider = Map()
+
+  protected def provide = _providers
+
+  protected def recv: Receive = {
+    case NoneAvailable(req) ⇒ noEndpointAvailable(req)
+
+    // add the endpoint - the if the uri hook matches,
+    // the message will be sent to the actor returned by the provider func
+    case Attach(provider) ⇒ attach(provider)
+  }
+
+  protected def receive: Receive = recv orElse dispatchHttpRequest
 }
+
 
 ///////////////////////////////////////////
 //  RequestMethods
@@ -287,13 +309,14 @@ class RootEndpoint extends Actor with Endpoint {
 
 /**
  * Basic description of the suspended async http request.
- *      Must be mixed with some kind of specific support (e.g. servlet 3.0 or jetty continuations)
+ * Must be mixed with some kind of specific support (e.g. servlet 3.0 or jetty continuations)
  *
  * @author Garrick Evans
  */
 trait RequestMethod {
+
   import java.io.IOException
-  import javax.servlet.http.{ HttpServletResponse, HttpServletRequest }
+  import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
 
   // required implementations
   val builder: () ⇒ tAsyncRequestContext
@@ -304,6 +327,7 @@ trait RequestMethod {
    * @return a completable request context
    */
   val context: Option[tAsyncRequestContext]
+
   def go: Boolean
 
   /**
@@ -323,29 +347,33 @@ trait RequestMethod {
   //
 
   def request = context.get.getRequest.asInstanceOf[HttpServletRequest]
+
   def response = context.get.getResponse.asInstanceOf[HttpServletResponse]
 
   def getHeaderOrElse(name: String, default: Function[Any, String]): String =
     request.getHeader(name) match {
       case null ⇒ default(null)
-      case s    ⇒ s
+      case s ⇒ s
     }
 
   def getParameterOrElse(name: String, default: Function[Any, String]): String =
     request.getParameter(name) match {
       case null ⇒ default(null)
-      case s    ⇒ s
+      case s ⇒ s
     }
 
   def complete(status: Int, body: String): Boolean = complete(status, body, Headers())
 
   def complete(status: Int, body: String, headers: Headers): Boolean =
-    rawComplete { res ⇒
-      res.setStatus(status)
-      headers foreach { h ⇒ response.setHeader(h._1, h._2) }
-      res.getWriter.write(body)
-      res.getWriter.close
-      res.flushBuffer
+    rawComplete {
+      res ⇒
+        res.setStatus(status)
+        headers foreach {
+          h ⇒ response.setHeader(h._1, h._2)
+        }
+        res.getWriter.write(body)
+        res.getWriter.close
+        res.flushBuffer
     }
 
   def rawComplete(completion: HttpServletResponse ⇒ Unit): Boolean =
@@ -386,37 +414,65 @@ trait RequestMethod {
    * Utility methods to send responses back
    */
   def OK(body: String): Boolean = complete(HttpServletResponse.SC_OK, body)
+
   def OK(body: String, headers: Headers): Boolean = complete(HttpServletResponse.SC_OK, body, headers)
+
   def Created(body: String): Boolean = complete(HttpServletResponse.SC_CREATED, body)
+
   def Accepted(body: String): Boolean = complete(HttpServletResponse.SC_ACCEPTED, body)
+
   def NotModified(body: String): Boolean = complete(HttpServletResponse.SC_NOT_MODIFIED, body)
+
   def BadRequest(body: String): Boolean = complete(HttpServletResponse.SC_BAD_REQUEST, body)
+
   def Unauthorized(body: String): Boolean = complete(HttpServletResponse.SC_UNAUTHORIZED, body)
+
   def Forbidden(body: String): Boolean = complete(HttpServletResponse.SC_FORBIDDEN, body)
+
   def NotAllowed(body: String): Boolean = complete(HttpServletResponse.SC_METHOD_NOT_ALLOWED, body)
+
   def NotFound(body: String): Boolean = complete(HttpServletResponse.SC_NOT_FOUND, body)
+
   def Timeout(body: String): Boolean = complete(HttpServletResponse.SC_REQUEST_TIMEOUT, body)
+
   def Conflict(body: String): Boolean = complete(HttpServletResponse.SC_CONFLICT, body)
+
   def UnsupportedMediaType(body: String): Boolean = complete(HttpServletResponse.SC_UNSUPPORTED_MEDIA_TYPE, body)
+
   def Error(body: String): Boolean = complete(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, body)
+
   def NotImplemented(body: String): Boolean = complete(HttpServletResponse.SC_NOT_IMPLEMENTED, body)
+
   def Unavailable(body: String, retry: Int): Boolean = complete(HttpServletResponse.SC_SERVICE_UNAVAILABLE, body, List(("Retry-After", retry.toString)))
 }
 
 abstract class Delete(val builder: () ⇒ tAsyncRequestContext) extends RequestMethod
+
 abstract class Get(val builder: () ⇒ tAsyncRequestContext) extends RequestMethod
+
 abstract class Head(val builder: () ⇒ tAsyncRequestContext) extends RequestMethod
+
 abstract class Options(val builder: () ⇒ tAsyncRequestContext) extends RequestMethod
+
 abstract class Post(val builder: () ⇒ tAsyncRequestContext) extends RequestMethod
+
 abstract class Put(val builder: () ⇒ tAsyncRequestContext) extends RequestMethod
+
 abstract class Trace(val builder: () ⇒ tAsyncRequestContext) extends RequestMethod
 
 trait RequestMethodFactory {
+
   def Delete(f: () ⇒ tAsyncRequestContext): RequestMethod
+
   def Get(f: () ⇒ tAsyncRequestContext): RequestMethod
+
   def Head(f: () ⇒ tAsyncRequestContext): RequestMethod
+
   def Options(f: () ⇒ tAsyncRequestContext): RequestMethod
+
   def Post(f: () ⇒ tAsyncRequestContext): RequestMethod
+
   def Put(f: () ⇒ tAsyncRequestContext): RequestMethod
+
   def Trace(f: () ⇒ tAsyncRequestContext): RequestMethod
 }
