@@ -1,128 +1,70 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-
-	<!--<parent>-->
-	<!--<groupId>com.thenewmotion</groupId>-->
-	<!--<artifactId>parent</artifactId>-->
-	<!--<version>1.3</version>-->
-	<!--</parent>-->
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.thenewmotion.akka</groupId>
-	<artifactId>akka-http</artifactId>
-	<version>2.0-SNAPSHOT</version>
+    <artifactId>akka-mist</artifactId>
+    <version>2.0-SNAPSHOT</version>
 
 
-	<name>akka-http</name>
-	<url>https://github.com/thenewmotion/akka-http</url>
+    <url>https://github.com/thenewmotion/akka-mist</url>
 
-	<properties>
-		<scala.version>2.9.1</scala.version>
-		<akka.version>1.3.1</akka.version>
-		<tomcat.version>7.0.26</tomcat.version>
-	</properties>
+    <properties>
+        <scala.version>2.9.1</scala.version>
+        <akka.version>1.3.1</akka.version>
+        <tomcat.version>7.0.26</tomcat.version>
+    </properties>
 
-	<dependencies>
-		<dependency>
-			<groupId>org.eclipse.jetty</groupId>
-			<artifactId>jetty-server</artifactId>
-			<version>7.4.0.v20110414</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.geronimo.specs</groupId>
-			<artifactId>geronimo-servlet_3.0_spec</artifactId>
-			<version>1.0</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>javax.annotation</groupId>
-			<artifactId>jsr250-api</artifactId>
-			<version>1.0</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.sun.jersey</groupId>
-			<artifactId>jersey-server</artifactId>
-			<version>1.3</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>commons-codec</groupId>
-			<artifactId>commons-codec</artifactId>
-			<version>1.4</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>javax.ws.rs</groupId>
-			<artifactId>jsr311-api</artifactId>
-			<version>1.1</version>
-			<scope>compile</scope>
-		</dependency>
+    <dependencies>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+            <version>7.4.0.v20110414</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.4</version>
+        </dependency>
 
-		<dependency>
-			<groupId>se.scalablesolutions.akka</groupId>
-			<artifactId>akka-actor</artifactId>
-			<version>${akka.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.scala-lang</groupId>
-			<artifactId>scala-library</artifactId>
-			<version>${scala.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.scala-lang</groupId>
-			<artifactId>scala-compiler</artifactId>
-			<version>${scala.version}</version>
-			<scope>provided</scope>
-		</dependency>
+        <dependency>
+            <groupId>se.scalablesolutions.akka</groupId>
+            <artifactId>akka-actor</artifactId>
+            <version>${akka.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>${scala.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-compiler</artifactId>
+            <version>${scala.version}</version>
+            <scope>provided</scope>
+        </dependency>
 
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.0.1</version>
+        </dependency>
 
-		<dependency>
-			<groupId>ch.qos.logback</groupId>
-			<artifactId>logback-classic</artifactId>
-			<version>1.0.1</version>
-		</dependency>
+        <dependency>
+            <groupId>org.apache.tomcat</groupId>
+            <artifactId>tomcat-servlet-api</artifactId>
+            <version>${tomcat.version}</version>
+            <scope>provided</scope>
+        </dependency>
 
-		<dependency>
-			<groupId>org.apache.tomcat</groupId>
-			<artifactId>tomcat-servlet-api</artifactId>
-			<version>${tomcat.version}</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.tomcat</groupId>
-			<artifactId>tomcat-catalina</artifactId>
-			<version>${tomcat.version}</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.tomcat</groupId>
-			<artifactId>tomcat-util</artifactId>
-			<version>${tomcat.version}</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.tomcat</groupId>
-			<artifactId>tomcat-coyote</artifactId>
-			<version>${tomcat.version}</version>
-			<scope>provided</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>4.10</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.mockito</groupId>
-			<artifactId>mockito-all</artifactId>
-			<version>1.9.0</version>
-			<scope>test</scope>
-		</dependency>
-
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.10</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.scalatest</groupId>
             <artifactId>scalatest_2.9.0</artifactId>
@@ -140,13 +82,12 @@
     </repositories>
 
     <scm>
-        <url>https://github.com/thenewmotion/akka-http</url>
-        <connection>scm:git:ssh://git@github.com/thenewmotion/akka-http.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com/thenewmotion/akka-http.git</developerConnection>
+        <url>https://github.com/thenewmotion/akka-mist</url>
+        <connection>scm:git:ssh://git@github.com/thenewmotion/akka-mist.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/thenewmotion/akka-mist.git</developerConnection>
     </scm>
 
     <build>
-
         <resources>
             <resource>
                 <directory>src/main/scala</directory>
@@ -157,56 +98,55 @@
             <resource>
                 <directory>src/main/resources</directory>
             </resource>
-
         </resources>
         <plugins>
-			<plugin>
-				<groupId>org.scala-tools</groupId>
-				<artifactId>maven-scala-plugin</artifactId>
-				<version>2.15.2</version>
-				<configuration>
-					<args>
-						<arg>-unchecked</arg>
-						<arg>-deprecation</arg>
-						<arg>-explaintypes</arg>
-					</args>
-					<jvmArgs>
-						<jvmArg>-Xmx1024m</jvmArg>
-						<jvmArg>-server</jvmArg>
-						<jvmArg>-Xss1m</jvmArg>
-						<jvmArg>-XX:+TieredCompilation</jvmArg>
-					</jvmArgs>
-				</configuration>
-				<executions>
-					<execution>
-						<goals>
-							<goal>compile</goal>
-							<goal>testCompile</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<!--<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-surefire-plugin</artifactId>
-				<version>2.12</version>
-				<configuration>
-					<argLine>-server -Xms128m -Xmx512m -XX:MaxPermSize=256m -XX:+TieredCompilation</argLine>
-					<systemProperties>
-						<property>
-							<name>run.mode</name>
-							<value>test</value>
-						</property>
-						<property>
-							<name>akka.mode</name>
-							<value>test</value>
-						</property>
-					</systemProperties>
-					<includes>
-						<include>**/*Spec.class</include>
-					</includes>
-				</configuration>
-			</plugin>-->
-		</plugins>
-	</build>
+            <plugin>
+                <groupId>org.scala-tools</groupId>
+                <artifactId>maven-scala-plugin</artifactId>
+                <version>2.15.2</version>
+                <configuration>
+                    <args>
+                        <arg>-unchecked</arg>
+                        <arg>-deprecation</arg>
+                        <arg>-explaintypes</arg>
+                    </args>
+                    <jvmArgs>
+                        <jvmArg>-Xmx1024m</jvmArg>
+                        <jvmArg>-server</jvmArg>
+                        <jvmArg>-Xss1m</jvmArg>
+                        <jvmArg>-XX:+TieredCompilation</jvmArg>
+                    </jvmArgs>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!--<plugin>
+                                  <groupId>org.apache.maven.plugins</groupId>
+                                  <artifactId>maven-surefire-plugin</artifactId>
+                                  <version>2.12</version>
+                                  <configuration>
+                                      <argLine>-server -Xms128m -Xmx512m -XX:MaxPermSize=256m -XX:+TieredCompilation</argLine>
+                                      <systemProperties>
+                                          <property>
+                                              <name>run.mode</name>
+                                              <value>test</value>
+                                          </property>
+                                          <property>
+                                              <name>akka.mode</name>
+                                              <value>test</value>
+                                          </property>
+                                      </systemProperties>
+                                      <includes>
+                                          <include>**/*Spec.class</include>
+                                      </includes>
+                                  </configuration>
+                              </plugin>-->
+        </plugins>
+    </build>
 </project>

@@ -47,12 +47,12 @@ object Types {
    * Used to match both AsyncContext and AsyncContinuation in order to complete the request
    */
   type tAsyncRequestContext = {
-    def complete: Unit
+    def complete
     def getRequest: ServletRequest
     def getResponse: ServletResponse
   }
 
-  type Header = Tuple2[String, String]
+  type Header = (String, String)
   type Headers = List[Header]
 
   def Headers(): Headers = Nil
