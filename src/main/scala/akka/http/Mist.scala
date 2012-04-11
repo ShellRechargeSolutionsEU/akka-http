@@ -110,15 +110,8 @@ trait Mist {
    * must be called prior to dispatching to "mistify"
    */
   def initMist(context: ServletContext) {
-    val server = context.getServerInfo
-    val (major, minor) = (context.getMajorVersion, context.getMinorVersion)
-    _factory = if (major >= 3) {
-      Some(Servlet30ContextMethodFactory)
-    } else if (server.toLowerCase startsWith JettyServer) {
-      Some(JettyContinuationMethodFactory)
-    } else {
-      None
-    }
+    _factory = if (context.getMajorVersion >= 3) Some(Servlet30ContextMethodFactory)
+    else throw new IllegalStateException("Akka Mist requires at least servlet 3.0")
   }
 }
 
