@@ -4,29 +4,29 @@
 
 package akka.http
 
-import akka.actor.{ActorRef, Actor}
-import akka.event.EventHandler
+import akka.migration._
 
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
 import javax.servlet.http.HttpServlet
 import javax.servlet.Filter
+import akka.config.OldConfig
+import akka.actor.{OldActor, GlobalActorSystem, ActorRef, Actor}
+import akka.event.OldEventHandler
 
 /**
  * @author Garrick Evans
  */
 object MistSettings {
 
-  import akka.config.Config._
-
   val JettyServer = "jetty"
   val TimeoutAttribute = "timeout"
 
-  val ConnectionClose = config.getBool("akka.http.connection-close", true)
-  val RootActorBuiltin = config.getBool("akka.http.root-actor-builtin", true)
-  val RootActorID = config.getString("akka.http.root-actor-id", "_httproot")
-  val DefaultTimeout = config.getLong("akka.http.timeout", 1000)
-  val ExpiredHeaderName = config.getString("akka.http.expired-header-name", "Async-Timeout")
-  val ExpiredHeaderValue = config.getString("akka.http.expired-header-value", "expired")
+  val ConnectionClose = OldConfig.config.getBool("akka.http.connection-close", true)
+  val RootActorBuiltin = OldConfig.config.getBool("akka.http.root-actor-builtin", true)
+  val RootActorPath = OldConfig.config.getString("akka.http.root-actor-path", "/http/root")
+  val DefaultTimeout = OldConfig.config.getLong("akka.http.timeout", 1000)
+  val ExpiredHeaderName = OldConfig.config.getString("akka.http.expired-header-name", "Async-Timeout")
+  val ExpiredHeaderValue = OldConfig.config.getString("akka.http.expired-header-value", "expired")
 }
 
 /**
@@ -73,7 +73,7 @@ trait Mist {
   /**
    * The root endpoint actor
    */
-  protected val _root = Actor.registry.actorsFor(RootActorID).head
+  protected val _root = GlobalActorSystem.actorFor(RootActorPath)
 
   /**
    * Server-specific method factory
@@ -194,9 +194,10 @@ object Endpoint {
   import akka.dispatch.Dispatchers
 
   /**
-   * leverage the akka akka.config to tweak the dispatcher for our endpoints
+   * leverage the akka akka.OldConfig to tweak the dispatcher for our endpoints
    */
-  val Dispatcher = Dispatchers.fromConfig("akka.http.mist-dispatcher")
+  //TODO
+//  val Dispatcher = Dispatchers.fromOldConfig("akka.http.mist-dispatcher")
 
   type Provider = PartialFunction[String, ActorRef]
 
@@ -214,7 +215,12 @@ trait Endpoint {
 
   import Endpoint._
 
-  self.dispatcher = Endpoint.Dispatcher
+
+  /*
+  * val myActor = system.actorOf(Props[MyActor].withDispatcher("my-dispatcher"), "myactor")
+  * */
+// TODO
+//  self.dispatcher = Endpoint.Dispatcher
 
   /**
    * A convenience method to get the actor ref
@@ -233,7 +239,7 @@ trait Endpoint {
   //  the point is that we need to attach something (for starters anyway)
   //  to the root
   //
-  def parentEndpoint: ActorRef = Actor.registry.actorFor[RootEndpoint].get
+  def parentEndpoint: ActorRef = GlobalActorSystem.actorFor(MistSettings.RootActorPath)
 
   //
   // this is where you want attach your endpoint hooks
@@ -248,9 +254,12 @@ trait Endpoint {
   /**
    * no endpoint available - completes the request with a 404
    */
-  protected def noEndpointAvailable(req: RequestMethod) = self.sender match {
+  /*protected def noEndpointAvailable(req: RequestMethod) = sender match {
     case Some(sender) => sender reply NoneAvailable(req)
     case None => req.NotFound("No endpoint available for [" + req.request.getPathInfo + "]")
+  }*/
+  protected def noEndpointAvailable(req: RequestMethod) = {
+    req.NotFound("No endpoint available for [" + req.request.getPathInfo + "]")
   }
 
 
@@ -265,13 +274,14 @@ trait Endpoint {
   }
 }
 
-class RootEndpoint extends Actor with Endpoint {
+class RootEndpoint extends OldActor with Endpoint {
 
   import Endpoint._
   import MistSettings._
 
-  // adopt the configured id
-  if (RootActorBuiltin) self.id = RootActorID
+  // adopt the OldConfigured id
+  //TODO
+//  if (RootActorBuiltin) self.path.toString = RootActorPath
 
   protected def attach(provider: Provider) {
     _providers = _providers orElse provider
@@ -381,7 +391,7 @@ trait RequestMethod {
           }
         } catch {
           case io: Exception ⇒
-            EventHandler.error(io, this, io.getMessage)
+            OldEventHandler.error(io, this, io.getMessage)
             false
         }
       case None ⇒ false
@@ -397,7 +407,7 @@ trait RequestMethod {
           }
         } catch {
           case io: IOException ⇒
-            EventHandler.error(io, this, io.getMessage)
+            OldEventHandler.error(io, this, io.getMessage)
         }
       case None ⇒ {}
     }
