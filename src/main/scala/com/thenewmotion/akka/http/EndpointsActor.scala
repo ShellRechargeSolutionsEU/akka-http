@@ -2,8 +2,6 @@ package com.thenewmotion.akka.http
 
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
 import akka.actor.{ActorLogging, Actor}
-import akka.actor.Actor._
-
 
 /**
  * @author Yaroslav Klymko

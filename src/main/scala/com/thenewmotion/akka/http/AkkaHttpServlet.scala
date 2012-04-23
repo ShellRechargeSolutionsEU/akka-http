@@ -1,7 +1,6 @@
 package com.thenewmotion.akka.http
 
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest, HttpServlet}
-import javax.servlet.{AsyncContext, AsyncListener, AsyncEvent}
 import akka.actor._
 
 
