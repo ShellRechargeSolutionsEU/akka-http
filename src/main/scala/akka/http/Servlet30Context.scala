@@ -12,6 +12,7 @@ import akka.event.OldEventHandler
 /**
  * @author Garrick Evans
  */
+@deprecated("Use com.thenewmotion.com", "2.0")
 trait Servlet30Context extends AsyncListener {
   import javax.servlet.http.HttpServletResponse
   import MistSettings._
@@ -55,6 +56,7 @@ trait Servlet30Context extends AsyncListener {
   }
 }
 
+@deprecated("Use com.thenewmotion.com", "2.0")
 object Servlet30ContextMethodFactory extends RequestMethodFactory {
   def Delete(f: () ⇒ tAsyncRequestContext): RequestMethod = new Delete(f) with Servlet30Context
   def Get(f: () ⇒ tAsyncRequestContext): RequestMethod = new Get(f) with Servlet30Context

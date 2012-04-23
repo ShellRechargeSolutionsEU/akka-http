@@ -12,9 +12,16 @@
 
     <properties>
         <scala.version>2.9.1</scala.version>
-        <akka.version>1.3.1</akka.version>
+        <akka.version>2.0.1</akka.version>
         <tomcat.version>7.0.26</tomcat.version>
     </properties>
+
+    <developers>
+        <developer>
+            <name>Yaroslav Klymko</name>
+            <email>y.klymko@thenewmotion.com</email>
+        </developer>
+    </developers>
 
     <dependencies>
         <dependency>
@@ -30,12 +37,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-server</artifactId>
-            <version>7.4.0.v20110414</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
             <version>1.4</version>
@@ -44,7 +45,13 @@
         <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-actor</artifactId>
-            <version>2.0</version>
+            <version>${akka.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-testkit</artifactId>
+            <scope>test</scope>
+            <version>${akka.version}</version>
         </dependency>
 
         <!--TODO REMOVE-->
@@ -83,6 +90,12 @@
             <groupId>org.specs2</groupId>
             <artifactId>specs2_${scala.version}</artifactId>
             <version>1.8.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>1.9.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

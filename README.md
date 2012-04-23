@@ -9,8 +9,8 @@ From [Akka Migration Guide](http://doc.akka.io/docs/akka/2.0/project/migration-g
 `In v1.3 the default name of the configuration file was akka.conf. In v2.0 the default name is application.conf.`
 
 Akka Http properties has been removed from `akka-reference.conf (akka.conf)`.
-So Akka Mist has `http-reference.conf` which is included in `application.conf` by default
-However some of the properties were removed from mist at all as dependend functionality.
+So Akka Mist has own `reference.conf`.
+However some of the properties were removed from mist at all, same happened with related functionality.
 
 ### Changed: ###
 

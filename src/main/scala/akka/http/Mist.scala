@@ -17,10 +17,6 @@ import akka.event.OldEventHandler
  * @author Garrick Evans
  */
 object MistSettings {
-
-  val JettyServer = "jetty"
-  val TimeoutAttribute = "timeout"
-
   val ConnectionClose = OldConfig.config.getBool("akka.http.connection-close", true)
   val RootActorBuiltin = OldConfig.config.getBool("akka.http.root-actor-builtin", true)
   val RootActorPath = OldConfig.config.getString("akka.http.root-actor-path", "/http/root")
@@ -119,6 +115,7 @@ trait Mist {
  * AkkaMistServlet adds support to bridge Http and Actors in an asynchronous fashion
  * Async impls currently supported: Servlet3.0, Jetty Continuations
  */
+@deprecated("Use com.thenewmotion.com", "2.0")
 class AkkaMistServlet extends HttpServlet with Mist {
 
   import javax.servlet.ServletConfig
@@ -150,6 +147,7 @@ class AkkaMistServlet extends HttpServlet with Mist {
  * Proof-of-concept, use at own risk
  * Will be officially supported in a later release
  */
+@deprecated("Use com.thenewmotion.com", "2.0")
 class AkkaMistFilter extends Filter with Mist {
 
   import javax.servlet.{ServletRequest, ServletResponse, FilterConfig, FilterChain}
@@ -189,6 +187,7 @@ class AkkaMistFilter extends Filter with Mist {
 //  Endpoints
 ///////////////////////////////////////////
 
+@deprecated("Use com.thenewmotion.com", "2.0")
 object Endpoint {
 
   import akka.dispatch.Dispatchers
@@ -210,6 +209,7 @@ object Endpoint {
 /**
  * @author Garrick Evans
  */
+@deprecated("Use com.thenewmotion.com", "2.0")
 trait Endpoint {
   this: Actor ⇒
 
@@ -220,7 +220,7 @@ trait Endpoint {
   * val myActor = system.actorOf(Props[MyActor].withDispatcher("my-dispatcher"), "myactor")
   * */
 // TODO
-//  self.dispatcher = Endpoint.Dispatcher
+//  self.dispatcher = EndpointsActor.Dispatcher
 
   /**
    * A convenience method to get the actor ref
@@ -274,6 +274,7 @@ trait Endpoint {
   }
 }
 
+@deprecated("Use com.thenewmotion.com", "2.0")
 class RootEndpoint extends OldActor with Endpoint {
 
   import Endpoint._
@@ -316,6 +317,7 @@ class RootEndpoint extends OldActor with Endpoint {
  *
  * @author Garrick Evans
  */
+@deprecated("Use com.thenewmotion.com", "2.0")
 trait RequestMethod {
 
   import java.io.IOException
