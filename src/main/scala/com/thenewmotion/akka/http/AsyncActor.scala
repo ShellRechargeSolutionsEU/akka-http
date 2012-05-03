@@ -12,7 +12,7 @@ import javax.servlet.{ServletRequest, ServletResponse, AsyncContext}
 /**
  * @author Yaroslav Klymko
  */
-class AsyncActorFsm extends Actor with LoggingFSM[Async.State, Async.Data] {
+class AsyncActor extends Actor with LoggingFSM[Async.State, Async.Data] {
 
   import Async._
   import Endpoints._

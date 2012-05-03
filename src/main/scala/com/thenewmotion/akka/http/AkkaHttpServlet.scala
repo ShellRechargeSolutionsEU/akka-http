@@ -45,7 +45,7 @@ class AkkaHttpServlet extends HttpServlet {
     val asyncContext = req.startAsync()
     asyncContext.setTimeout(system.settings.config.getLong("akka.http.timeout"))
 
-    val actor = system.actorOf(props.withCreator(new AsyncActorFsm))
+    val actor = system.actorOf(props.withCreator(new AsyncActor))
     asyncContext.addListener(new Listener(actor, system))
 
     actor ! asyncContext

@@ -7,7 +7,6 @@ import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
 import org.specs2.mutable.SpecificationWithJUnit
 import akka.testkit.{TestFSMRef, TestKit}
 import Listener._
-import AsyncActor._
 import Async._
 import Endpoints._
 import akka.actor.{FSM, ActorSystem, Props}
@@ -16,7 +15,7 @@ import akka.actor.{FSM, ActorSystem, Props}
 /**
  * @author Yaroslav Klymko
  */
-class AsyncActorFsmSpec extends SpecificationWithJUnit with Mockito {
+class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
 
   abstract class HttpContext extends TestKit(ActorSystem()) with Scope {
 
@@ -26,7 +25,7 @@ class AsyncActorFsmSpec extends SpecificationWithJUnit with Mockito {
 
     val asyncContext = AsyncContextMock()
 
-    val actorRef = TestFSMRef(new AsyncActorFsm)
+    val actorRef = TestFSMRef(new AsyncActor)
 
     def asyncEventMessage(on: OnEvent) = AsyncEventMessage(new AsyncEvent(asyncContext, new Exception), on)
 
