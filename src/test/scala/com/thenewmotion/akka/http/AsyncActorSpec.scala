@@ -2,14 +2,14 @@ package com.thenewmotion.akka.http
 
 import org.specs2.mock.Mockito
 import org.specs2.specification.Scope
+import org.specs2.mutable.SpecificationWithJUnit
 import javax.servlet.AsyncEvent
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
-import org.specs2.mutable.SpecificationWithJUnit
 import akka.testkit.{TestFSMRef, TestKit}
+import akka.actor.{FSM, ActorSystem, Props}
 import Listener._
 import Async._
 import Endpoints._
-import akka.actor.{FSM, ActorSystem, Props}
 
 
 /**
@@ -72,7 +72,7 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
 
       def completion(res: HttpServletResponse): (Boolean => Unit) = {
         called = true
-        (b: Boolean) => ()
+        DummyCallback
       }
 
       expectMsgType[Find]
@@ -88,7 +88,7 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
 
       def completion(res: HttpServletResponse): (Boolean => Unit) = {
         called = true
-        (b: Boolean) => ()
+        DummyCallback
       }
 
       expectMsgType[Find]
@@ -103,7 +103,7 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
 
       def completion(res: HttpServletResponse): (Boolean => Unit) = {
         called = true
-        (b: Boolean) => ()
+        DummyCallback
       }
 
       def func(req: HttpServletRequest): (HttpServletResponse => Boolean => Unit) = {

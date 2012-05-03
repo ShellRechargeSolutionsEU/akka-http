@@ -25,14 +25,17 @@ class Listener(actor: ActorRef, system: ActorSystem) extends AsyncListener {
 
   def onTimeout(event: AsyncEvent) {
     actor ! AsyncEventMessage(event, OnTimeout)
-
-    val config = system.settings.config
     val asyncContext = event.getAsyncContext
-    val expiredHeaderName = config.getString("akka.http.expired-header-name")
-    val expiredHeaderValue = config.getString("akka.http.expired-header-value")
+
     val res = asyncContext.getResponse.asInstanceOf[HttpServletResponse]
-    res.addHeader(expiredHeaderName, expiredHeaderValue)
+    val (name, value) = expiredHeader()
+    res.addHeader(name, value)
     asyncContext.complete()
+  }
+
+  private def expiredHeader(): (String, String) = {
+    val config = system.settings.config
+    config.getString("akka.http.expired-header-name") -> config.getString("akka.http.expired-header-value")
   }
 }
 

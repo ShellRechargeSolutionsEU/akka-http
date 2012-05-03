@@ -24,22 +24,21 @@ object Endpoints {
   */
 
   type Callback = (Boolean => Unit)
-  val Callback: Callback = (_: Boolean) => ()
+  val DummyCallback: Callback = _ => ()
 
   type Completing = (HttpServletResponse => Callback)
-  val DummyCompleting: Completing = (_: HttpServletResponse) => Callback
+  val DummyCompleting: Completing = _ => DummyCallback
 
-  type Processing = (HttpServletRequest => Completing)
+  type Endpoint = (HttpServletRequest => Completing)
+  val DummyEndpoint: Endpoint = (_ => DummyCompleting)
 
-  type Endpoint = (HttpServletRequest => HttpServletResponse => Boolean => Unit)
-  val DummyEndpoint: Endpoint = (_ => _ => _ => Unit)
-  val NoEndpoint: Endpoint = (req: HttpServletRequest) => (res: HttpServletResponse) => {
+  val NotFound: Endpoint = (req: HttpServletRequest) => (res: HttpServletResponse) => {
     res.setStatus(HttpServletResponse.SC_NOT_FOUND)
     val writer = res.getWriter
     writer.write("No endpoint available for [" + req.getPathInfo + "]")
     writer.flush()
     writer.close()
-    Callback
+    DummyCallback
   }
 
   type Provider = PartialFunction[String, Endpoint]
@@ -73,7 +72,7 @@ class Endpoints extends Actor with ActorLogging {
           provider(url)
       } getOrElse {
         log.debug("Not endpoint found for '{}'", url)
-        NoEndpoint
+        NotFound
       }
 
       sender ! Found(endpoint)

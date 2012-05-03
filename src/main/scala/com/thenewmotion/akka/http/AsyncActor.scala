@@ -4,6 +4,7 @@ import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
 import akka.actor._
 import akka.util.duration._
 import javax.servlet.{ServletRequest, ServletResponse, AsyncContext}
+import Endpoints._
 
 /**
  * @author Yaroslav Klymko
@@ -15,7 +16,6 @@ import javax.servlet.{ServletRequest, ServletResponse, AsyncContext}
 class AsyncActor extends Actor with LoggingFSM[Async.State, Async.Data] {
 
   import Async._
-  import Endpoints._
   import context._
 
   //TODO maybe depends on async timeout?
@@ -42,7 +42,7 @@ class AsyncActor extends Actor with LoggingFSM[Async.State, Async.Data] {
       safeProcess(endpoint, ctx)
     case Event(FSM.StateTimeout, ctx@Context(_, url)) =>
       log.debug("No endpoint received within {} millis for '{}'", endpointFoundTimeout, url)
-      safeProcess(NoEndpoint, ctx)
+      safeProcess(NotFound, ctx)
   }
   when(Completing) {
     case Event(Complete(completing), ctx@Context(async, url)) =>
@@ -64,7 +64,7 @@ class AsyncActor extends Actor with LoggingFSM[Async.State, Async.Data] {
         case e: Exception =>
           log.error("Exception while responding for '{}'", url)
           res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
-          safeComplete(Callback)
+          safeComplete(DummyCallback)
       }
       stop()
   }
@@ -90,7 +90,7 @@ class AsyncActor extends Actor with LoggingFSM[Async.State, Async.Data] {
         log.error(e, "Exception while serving request for '{}'", asyncContext.url)
         (res: HttpServletResponse) => {
           res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
-          Callback
+          DummyCallback
         }
     }
 
@@ -102,7 +102,6 @@ class AsyncActor extends Actor with LoggingFSM[Async.State, Async.Data] {
 
 
 object Async {
-
   sealed trait State
   case object Idle extends State
   case object Started extends State
@@ -113,5 +112,5 @@ object Async {
   case class Context(context: AsyncContext, url: String) extends Data
   case object Empty extends Data
 
-  case class Complete(func: HttpServletResponse => Boolean => Unit)
+  case class Complete(func: Completing)
 }

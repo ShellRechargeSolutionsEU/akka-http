@@ -17,8 +17,8 @@ object AsyncContextMock extends Mockito {
     req.getPathInfo returns "/test"
 
     val asyncContext = mock[AsyncContext]
-    req.startAsync() returns asyncContext
-    asyncContext.setTimeout(10)
+    req.startAsync returns asyncContext
+    asyncContext.getTimeout returns 1000
     req.getAsyncContext returns asyncContext
 
     val res = mock[HttpServletResponse]
@@ -28,12 +28,4 @@ object AsyncContextMock extends Mockito {
     asyncContext.getResponse returns res
     asyncContext
   }
-}
-
-//TODO
-object AsyncEventMock extends Mockito{
-
-//  def apply(context:AsyncContext): AsyncEvent = {
-//
-//  }
 }
