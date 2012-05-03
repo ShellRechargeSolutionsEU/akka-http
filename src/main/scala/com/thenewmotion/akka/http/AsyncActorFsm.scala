@@ -14,7 +14,6 @@ import javax.servlet.{ServletRequest, ServletResponse, AsyncContext}
  */
 class AsyncActorFsm extends Actor with LoggingFSM[Async.State, Async.Data] {
 
-  import AsyncActor._
   import Async._
   import Endpoints._
   import context._
@@ -99,4 +98,20 @@ class AsyncActorFsm extends Actor with LoggingFSM[Async.State, Async.Data] {
     self ! Complete(complete)
     goto(Completing) using asyncContext
   }
+}
+
+
+object Async {
+
+  sealed trait State
+  case object Idle extends State
+  case object Started extends State
+  case object ProcessingRequest extends State
+  case object Completing extends State
+
+  sealed trait Data
+  case class Context(context: AsyncContext, url: String) extends Data
+  case object Empty extends Data
+
+  case class Complete(func: HttpServletResponse => Boolean => Unit)
 }
