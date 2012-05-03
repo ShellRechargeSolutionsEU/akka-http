@@ -83,16 +83,12 @@ class AsyncActor(asyncContext: AsyncContext) extends Actor with ActorLogging {
 }
 
 object Async {
-  val LookingForEndpointTimeout = 1000 //millis
 
   sealed trait State
   case object Idle extends State
   case object Started extends State
   case object ProcessingRequest extends State
   case object Completing extends State
-
-
-  case class StartAsync(context: AsyncContext)
 
   sealed trait Data
   case class Context(context: AsyncContext, url: String) extends Data
