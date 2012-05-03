@@ -1,7 +1,7 @@
 package com.thenewmotion.akka.http
 
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest, HttpServlet}
-import akka.actor._
+import akka.actor.{ActorSystem, Props}
 
 
 class AkkaHttpServlet extends HttpServlet {
