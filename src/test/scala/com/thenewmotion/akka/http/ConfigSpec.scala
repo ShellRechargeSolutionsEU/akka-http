@@ -15,6 +15,7 @@ class ConfigSpec extends SpecificationWithJUnit {
       getBoolean("akka.http.root-actor-builtin") mustEqual true
       getString("akka.http.root-actor-path") mustEqual "/http/root"
       getLong("akka.http.timeout") mustEqual 1000L
+      getLong("akka.http.endpoint-retrieval-timeout") mustEqual 500L
     }
   }
 }

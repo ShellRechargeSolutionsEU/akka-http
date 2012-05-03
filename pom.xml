@@ -160,7 +160,7 @@
                 <configuration>
                     <argLine>-server -Xms128m -Xmx512m -XX:MaxPermSize=256m -XX:+TieredCompilation</argLine>
                     <includes>
-                        <include>**/*Spec.class</include>
+                        <include>**/AsyncActorSpec.class</include>
                     </includes>
                 </configuration>
             </plugin>

@@ -4,19 +4,19 @@ import org.specs2.mock.Mockito
 import org.specs2.specification.Scope
 import javax.servlet.AsyncEvent
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
+import org.specs2.mutable.SpecificationWithJUnit
+import akka.testkit.{TestFSMRef, TestKit}
 import Listener._
 import AsyncActor._
+import Async._
 import Endpoints._
-import org.specs2.mutable.SpecificationWithJUnit
-import akka.testkit.{TestKit, TestActorRef}
-import akka.actor.{ActorSystem, Props}
+import akka.actor.{FSM, ActorSystem, Props}
 
 
 /**
  * @author Yaroslav Klymko
  */
-//TODO maybe it's FSM
-class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
+class AsyncActorFsmSpec extends SpecificationWithJUnit with Mockito {
 
   abstract class HttpContext extends TestKit(ActorSystem()) with Scope {
 
@@ -26,33 +26,48 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
 
     val asyncContext = AsyncContextMock()
 
-    val actorRef = TestActorRef(new AsyncActor(asyncContext))
+    val actorRef = TestFSMRef(new AsyncActorFsm)
 
     def asyncEventMessage(on: OnEvent) = AsyncEventMessage(new AsyncEvent(asyncContext, new Exception), on)
+
+    def start() = {
+      actorRef.stateName mustEqual Idle
+      actorRef.stateData mustEqual Empty
+      actorRef ! asyncContext
+      actorRef.stateName mustEqual Started
+      actorRef.stateData mustEqual Context(asyncContext, "/test")
+    }
 
     def res = asyncContext.getResponse.asInstanceOf[HttpServletResponse]
   }
 
   "AsyncActor" should {
     "look for defined endpoint for current request when started" >> new HttpContext {
-      actorRef ! Start
+      start()
       expectMsgType[Find]
-      actorRef ! Found(_ => _ => _ => Unit)
+      actorRef ! Found(DummyEndpoint)
       there was one(asyncContext).complete()
       actorRef.isTerminated must beTrue
     }
+    "when no endpoint received within 'endpoint-retrieval-timeout' respond with HTTP 404" >> new HttpContext {
+      start()
+      expectMsgType[Find]
+      actorRef ! FSM.StateTimeout
+      there was one(res).setStatus(HttpServletResponse.SC_NOT_FOUND)
+      there was one(asyncContext).complete()
+    }
     "stop self on Error event" >> new HttpContext {
-      actorRef ! Start
+      start()
       actorRef ! asyncEventMessage(OnError)
       actorRef.isTerminated must beTrue
     }
     "stop self on Complete event" >> new HttpContext {
-      actorRef ! Start
+      start()
       actorRef ! asyncEventMessage(OnComplete)
       actorRef.isTerminated must beTrue
     }
     "stop self on Timeout event" >> new HttpContext {
-      actorRef ! Start
+      start()
 
       var called = false
 
@@ -68,7 +83,7 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
       called must beFalse
     }
     "response if async not completed" >> new HttpContext {
-      actorRef ! Start
+      start()
 
       var called = false
 
@@ -83,7 +98,7 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
       called must beTrue
     }
     "not response if async already completed" >> new HttpContext {
-      actorRef ! Start
+      start()
 
       var called = false
 
@@ -104,7 +119,7 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
       called must beFalse
     }
     "response with 'Status Code 500' when exception while processing request" >> new HttpContext {
-      actorRef ! Start
+      start()
 
       def func(req: HttpServletRequest): (HttpServletResponse => Boolean => Unit) = {
         throw new Exception
@@ -117,7 +132,7 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
       there was one(asyncContext).complete()
     }
     "response with 'Status Code 500' when exception while responding" >> new HttpContext {
-      actorRef ! Start
+      start()
 
       def func(res: HttpServletResponse): (Boolean => Unit) = {
         throw new Exception
@@ -130,7 +145,7 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
       there was one(asyncContext).complete()
     }
     "pass to enpoint true if completed successfully" >> new HttpContext {
-      actorRef ! Start
+      start()
 
       expectMsgType[Find]
       var result = false
@@ -140,7 +155,7 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
       result must beTrue
     }
     "pass to endpoint false if not completed successfully" >> new HttpContext {
-      actorRef ! Start
+      start()
 
       expectMsgType[Find]
       asyncContext.complete() throws (new RuntimeException)

@@ -1,15 +1,16 @@
 package com.thenewmotion.akka.http
 
-import javax.servlet.AsyncContext
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
-import akka.actor.{ActorRef, ActorLogging, Actor}
+import akka.actor._
+import akka.util.duration._
+import javax.servlet.{ServletRequest, ServletResponse, AsyncContext}
 
 /**
  * @author Yaroslav Klymko
  */
 class AsyncActor(asyncContext: AsyncContext) extends Actor with ActorLogging {
   import AsyncActor._
-  import EndpointsActor._
+  import Endpoints._
   import context._
 
   def req: HttpServletRequest = asyncContext.getRequest.asInstanceOf[HttpServletRequest]
@@ -18,13 +19,11 @@ class AsyncActor(asyncContext: AsyncContext) extends Actor with ActorLogging {
 
   lazy val url = req.getPathInfo
 
-  def endpointsActor: ActorRef = system.actorFor("/user/endpoints")
-
   protected def receive = {
     case Start =>
-      log.debug("Starting async for '{}'", url)
+      log.debug("Started async for '{}'", url)
       become(receiveEndpoint orElse receiveEvent)
-      endpointsActor ! Find(url)
+      system.actorFor("/user/endpoints") ! Find(url)
   }
 
   private def receiveEndpoint: Receive = {
@@ -36,7 +35,7 @@ class AsyncActor(asyncContext: AsyncContext) extends Actor with ActorLogging {
           log.error(e, "Exception while serving request for '{}'", url)
           (res: HttpServletResponse) => {
             res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
-            (b: Boolean) => ()
+            Callback
           }
       }
 
@@ -81,6 +80,23 @@ class AsyncActor(asyncContext: AsyncContext) extends Actor with ActorLogging {
           stop(self)
       }
   }
+}
+
+object Async {
+  val LookingForEndpointTimeout = 1000 //millis
+
+  sealed trait State
+  case object Idle extends State
+  case object Started extends State
+  case object ProcessingRequest extends State
+  case object Completing extends State
+
+
+  case class StartAsync(context: AsyncContext)
+
+  sealed trait Data
+  case class Context(context: AsyncContext, url: String) extends Data
+  case object Empty extends Data
 }
 
 object AsyncActor {

@@ -6,7 +6,7 @@ import akka.actor.{ActorLogging, Actor}
 /**
  * @author Yaroslav Klymko
  */
-object EndpointsActor {
+object Endpoints {
   /*
   (req: HttpServletRequest) => {
     // ASYNC SCOPE
@@ -22,7 +22,26 @@ object EndpointsActor {
     }
   }
   */
+
+  type Callback = (Boolean => Unit)
+  val Callback: Callback = (_: Boolean) => ()
+
+  type Completing = (HttpServletResponse => Callback)
+  val DummyCompleting: Completing = (_: HttpServletResponse) => Callback
+
+  type Processing = (HttpServletRequest => Completing)
+
   type Endpoint = (HttpServletRequest => HttpServletResponse => Boolean => Unit)
+  val DummyEndpoint: Endpoint = (_ => _ => _ => Unit)
+  val NoEndpoint: Endpoint = (req: HttpServletRequest) => (res: HttpServletResponse) => {
+    res.setStatus(HttpServletResponse.SC_NOT_FOUND)
+    val writer = res.getWriter
+    writer.write("No endpoint available for [" + req.getPathInfo + "]")
+    writer.flush()
+    writer.close()
+    Callback
+  }
+
   type Provider = PartialFunction[String, Endpoint]
   case class Find(url: String)
   case class Found(e: Endpoint)
@@ -30,22 +49,12 @@ object EndpointsActor {
   case class Detach(name: String)
 }
 
+class Endpoints extends Actor with ActorLogging {
 
-class EndpointsActor extends Actor with ActorLogging {
+  import Endpoints._
 
-  import EndpointsActor._
+  private val providers = collection.mutable.Map[String, Provider]()
 
-  private var providers = collection.mutable.Map[String, Provider]()
-
-
-  def NoEndpointAvailable(url: String): Endpoint = (req: HttpServletRequest) => (res: HttpServletResponse) => {
-    res.setStatus(HttpServletResponse.SC_NOT_FOUND)
-    val writer = res.getWriter
-    writer.write("No endpoint available for [" + url + "]")
-    writer.flush()
-    writer.close()
-    (b: Boolean) => ()
-  }
 
   protected def receive = {
     case Attach(name, provider) =>
@@ -64,7 +73,7 @@ class EndpointsActor extends Actor with ActorLogging {
           provider(url)
       } getOrElse {
         log.debug("Not endpoint found for '{}'", url)
-        NoEndpointAvailable(url)
+        NoEndpoint
       }
 
       sender ! Found(endpoint)
