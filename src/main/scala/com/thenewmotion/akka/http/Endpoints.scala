@@ -9,7 +9,7 @@ import akka.actor.{ActorLogging, Actor}
 object Endpoints {
   /*
   (req: HttpServletRequest) => {
-    // ASYNC SCOPE
+    // REQUEST SCOPE
     // heavy scope, actually this is a place async is needed for
     // async request might expire
     (res: HttpServletResponse) => {

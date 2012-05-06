@@ -2,6 +2,7 @@ package com.thenewmotion.akka.http
 
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest, HttpServlet}
 import akka.actor.{ActorSystem, Props}
+import com.typesafe.config.ConfigFactory
 
 
 class AkkaHttpServlet extends HttpServlet {
@@ -11,7 +12,7 @@ class AkkaHttpServlet extends HttpServlet {
   override def init() {
     super.init()
 
-    val system = ActorSystem("http")
+    val system = ActorSystem(ConfigFactory.load().getString("akka.http.system-name"))
     system.actorOf(Props[Endpoints], "endpoints")
     _actorSystem = Some(system)
     onSystemInit(system)
@@ -40,12 +41,11 @@ class AkkaHttpServlet extends HttpServlet {
 
   private def doActor(req: HttpServletRequest, res: HttpServletResponse) {
     val system = _actorSystem.get
-    val props = Props().withDispatcher("akka.http.actor.dispatcher")
+    val props = Props[AsyncActor].withDispatcher("akka.http.actor.dispatcher")
+    val actor = system.actorOf(props)
 
     val asyncContext = req.startAsync()
     asyncContext.setTimeout(system.settings.config.getLong("akka.http.timeout"))
-
-    val actor = system.actorOf(props.withCreator(new AsyncActor))
     asyncContext.addListener(new Listener(actor, system))
 
     actor ! asyncContext

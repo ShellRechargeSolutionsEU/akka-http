@@ -9,11 +9,10 @@ class ConfigSpec extends SpecificationWithJUnit {
     "contain properties for akka-http that are used in code with their correct defaults" >> {
       val config = ActorSystem().settings.config
       import config._
-      getBoolean("akka.http.connection-close") mustEqual true
       getString("akka.http.expired-header-name") mustEqual "Async-Timeout"
       getString("akka.http.expired-header-value") mustEqual "expired"
-      getBoolean("akka.http.root-actor-builtin") mustEqual true
-      getString("akka.http.root-actor-path") mustEqual "/http/root"
+      getString("akka.http.system-name") mustEqual "http"
+      getString("akka.http.endpoints-path") mustEqual "endpoints"
       getLong("akka.http.timeout") mustEqual 1000L
       getLong("akka.http.endpoint-retrieval-timeout") mustEqual 500L
     }

@@ -21,7 +21,6 @@ class AkkaHttpServletSpec extends SpecificationWithJUnit {
     }
 
     "create actor for each request" >> {
-
       val limit = 100
       (0 to limit).foreach {
         _ =>
