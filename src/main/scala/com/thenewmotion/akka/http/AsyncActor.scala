@@ -5,6 +5,7 @@ import akka.actor._
 import akka.util.duration._
 import javax.servlet.{ServletRequest, ServletResponse, AsyncContext}
 import Endpoints._
+import Http._
 
 /**
  * @author Yaroslav Klymko
@@ -14,11 +15,9 @@ class AsyncActor extends Actor with LoggingFSM[Async.State, Async.Data] {
   import Async._
   import context._
 
-  //TODO maybe depends on async timeout?
-  val endpointFoundTimeout = system.settings.config.getLong("akka.http.endpoint-retrieval-timeout")
-
   implicit def res2HttpRes(res: ServletResponse) = res.asInstanceOf[HttpServletResponse]
   implicit def req2HttpReq(req: ServletRequest) = req.asInstanceOf[HttpServletRequest]
+  val endpointTimeout = system.http.endpointRetrievalTimeout
 
   startWith(Idle, Empty)
 
@@ -26,16 +25,15 @@ class AsyncActor extends Actor with LoggingFSM[Async.State, Async.Data] {
     case Event(async: AsyncContext, Empty) =>
       val url = async.getRequest.getPathInfo
       log.debug("Started async for '{}'", url)
-      actorFor("../endpoints") ! Find(url)
+      system.http.endpoints ! Find(url)
       goto(Started) using Context(async, url)
   }
-
-  when(Started, endpointFoundTimeout millis) {
+  when(Started, endpointTimeout millis) {
     case Event(Found(endpoint), ctx@Context(_, url)) =>
       log.debug("Processing async for '{}'", url)
       safeProcess(endpoint, ctx)
     case Event(FSM.StateTimeout, ctx@Context(_, url)) =>
-      log.debug("No endpoint received within {} millis for '{}'", endpointFoundTimeout, url)
+      log.debug("No endpoint received within {} millis for '{}'", endpointTimeout, url)
       safeProcess(NotFound, ctx)
   }
   when(Completing) {

@@ -1,13 +1,13 @@
 package com.thenewmotion.akka.http
 
-import akka.actor.{ActorSystem, ActorRef}
+import akka.actor.ActorRef
 import javax.servlet.{AsyncEvent, AsyncListener}
 import javax.servlet.http.HttpServletResponse
 
 /**
  * @author Yaroslav Klymko
  */
-class Listener(actor: ActorRef, system: ActorSystem) extends AsyncListener {
+class Listener(actor: ActorRef, system: ActorHttpSystem) extends AsyncListener {
 
   import Listener._
 
@@ -28,14 +28,9 @@ class Listener(actor: ActorRef, system: ActorSystem) extends AsyncListener {
     val asyncContext = event.getAsyncContext
 
     val res = asyncContext.getResponse.asInstanceOf[HttpServletResponse]
-    val (name, value) = expiredHeader()
+    val (name, value) = system.expiredHeader()
     res.addHeader(name, value)
     asyncContext.complete()
-  }
-
-  private def expiredHeader(): (String, String) = {
-    val config = system.settings.config
-    config.getString("akka.http.expired-header-name") -> config.getString("akka.http.expired-header-value")
   }
 }
 

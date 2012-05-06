@@ -2,18 +2,18 @@ package com.thenewmotion.akka.http
 
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest, HttpServlet}
 import akka.actor.{ActorSystem, Props}
-import com.typesafe.config.ConfigFactory
+import Http._
 
 
 class AkkaHttpServlet extends HttpServlet {
 
-  private[http] var _actorSystem: Option[ActorSystem] = None
+  private[http] var _actorSystem: Option[ActorHttpSystem] = None
 
   override def init() {
     super.init()
 
-    val system = ActorSystem(ConfigFactory.load().getString("akka.http.system-name"))
-    system.actorOf(Props[Endpoints], "endpoints")
+    val system = ActorHttpSystem()
+    system.actorOf(Props[EndpointsActor], system.endpointsPath)
     _actorSystem = Some(system)
     onSystemInit(system)
   }
@@ -29,8 +29,8 @@ class AkkaHttpServlet extends HttpServlet {
     _actorSystem = None
   }
 
-  def onSystemInit(system: ActorSystem) {}
-  def onSystemDestroy(system: ActorSystem) {}
+  def onSystemInit(system: ActorHttpSystem) {}
+  def onSystemDestroy(system: ActorHttpSystem) {}
 
   override def doPost(req: HttpServletRequest, res: HttpServletResponse) {doActor(req, res)}
   override def doPut(req: HttpServletRequest, res: HttpServletResponse) {doActor(req, res)}
@@ -45,7 +45,7 @@ class AkkaHttpServlet extends HttpServlet {
     val actor = system.actorOf(props)
 
     val asyncContext = req.startAsync()
-    asyncContext.setTimeout(system.settings.config.getLong("akka.http.timeout"))
+    asyncContext.setTimeout(system.asyncTimeout)
     asyncContext.addListener(new Listener(actor, system))
 
     actor ! asyncContext

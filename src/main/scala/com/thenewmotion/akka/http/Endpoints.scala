@@ -6,7 +6,7 @@ import akka.actor.{ActorLogging, Actor}
 /**
  * @author Yaroslav Klymko
  */
-object Endpoints {
+trait Endpoints {
   /*
   (req: HttpServletRequest) => {
     // REQUEST SCOPE
@@ -48,7 +48,9 @@ object Endpoints {
   case class Detach(name: String)
 }
 
-class Endpoints extends Actor with ActorLogging {
+object Endpoints extends Endpoints
+
+class EndpointsActor extends Actor with ActorLogging {
 
   import Endpoints._
 
@@ -62,10 +64,8 @@ class Endpoints extends Actor with ActorLogging {
     case Detach(name) =>
       log.debug("Detaching provider '{}'", name)
       providers -= name
-
     case Find(url) =>
       log.debug("Looking for endpoint for '{}'", url)
-
       val endpoint = providers.toList.collectFirst {
         case (name, provider) if provider.isDefinedAt(url) =>
           log.debug("Endpoint '{}' found for '{}'", name, url)
@@ -74,7 +74,6 @@ class Endpoints extends Actor with ActorLogging {
         log.debug("Not endpoint found for '{}'", url)
         NotFound
       }
-
       sender ! Found(endpoint)
   }
 }
