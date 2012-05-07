@@ -6,18 +6,16 @@ import akka.util.duration._
 import javax.servlet.{ServletRequest, ServletResponse, AsyncContext}
 import Endpoints._
 import Http._
+import Async._
 
 /**
  * @author Yaroslav Klymko
  */
-class AsyncActor extends Actor with LoggingFSM[Async.State, Async.Data] {
-
-  import Async._
-  import context._
+class AsyncActor extends Actor with LoggingFSM[State, Data] {
 
   implicit def res2HttpRes(res: ServletResponse) = res.asInstanceOf[HttpServletResponse]
   implicit def req2HttpReq(req: ServletRequest) = req.asInstanceOf[HttpServletRequest]
-  val endpointTimeout = system.http.endpointRetrievalTimeout
+  val endpointTimeout = context.system.http.endpointRetrievalTimeout
 
   startWith(Idle, Empty)
 
@@ -25,13 +23,16 @@ class AsyncActor extends Actor with LoggingFSM[Async.State, Async.Data] {
     case Event(async: AsyncContext, Empty) =>
       val url = async.getRequest.getPathInfo
       log.debug("Started async for '{}'", url)
-      system.http.endpoints ! Find(url)
+      context.system.http.endpoints ! Find(url)
       goto(Started) using Context(async, url)
   }
   when(Started, endpointTimeout millis) {
-    case Event(Found(endpoint), ctx@Context(_, url)) =>
+    case Event(Found(EndpointFunc(func)), ctx@Context(_, url)) =>
       log.debug("Processing async for '{}'", url)
-      safeProcess(endpoint, ctx)
+      safeProcess(func, ctx)
+    case Event(Found(EndpointActor(actor)), ctx@Context(async, url)) =>
+      log.debug("Passing async processing scope to endpoint actor for '{}'", url)
+      safeProcess(actor, ctx)
     case Event(FSM.StateTimeout, ctx@Context(_, url)) =>
       log.debug("No endpoint received within {} millis for '{}'", endpointTimeout, url)
       safeProcess(NotFound, ctx)
@@ -77,17 +78,29 @@ class AsyncActor extends Actor with LoggingFSM[Async.State, Async.Data] {
 
   initialize
 
-  def safeProcess(endpoint: Endpoint, async: Context): State = {
-    val complete = try endpoint(async.context.getRequest) catch {
-      case e: Exception =>
-        log.error(e, "Exception while serving request for '{}'", async.url)
-        (res: HttpServletResponse) => {
-          res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
-          DummyCallback
-        }
-    }
+  def InternalErrorOnException(url: String): PartialFunction[Throwable, Unit] = {
+    case e: Exception =>
+      log.error(e, "Exception while serving request for '{}'", url)
+      val internalError = (res: HttpServletResponse) => {
+        res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
+        DummyCallback
+      }
+      self ! Complete(internalError)
+  }
+
+  def safeProcess(endpoint: Processing, async: Context): State = {
+    try self ! Complete(endpoint(async.context.getRequest))
+    catch InternalErrorOnException(async.url)
+
     //we want receive different messages before responding, for example 'Timeout'
-    self ! Complete(complete)
+    goto(Completing) using async
+  }
+
+  def safeProcess(actor: ActorRef, async: Context): State = {
+    try actor ! async.context.getRequest
+    catch InternalErrorOnException(async.url)
+
+    //actor should respond with Complete(..) message
     goto(Completing) using async
   }
 }

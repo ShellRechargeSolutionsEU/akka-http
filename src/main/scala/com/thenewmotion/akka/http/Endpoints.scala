@@ -1,12 +1,13 @@
 package com.thenewmotion.akka.http
 
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
-import akka.actor.{ActorLogging, Actor}
+import akka.actor.{ActorRef, ActorLogging, Actor}
 
 /**
  * @author Yaroslav Klymko
  */
 trait Endpoints {
+
   /*
   (req: HttpServletRequest) => {
     // REQUEST SCOPE
@@ -29,10 +30,10 @@ trait Endpoints {
   type Completing = (HttpServletResponse => Callback)
   val DummyCompleting: Completing = _ => DummyCallback
 
-  type Endpoint = (HttpServletRequest => Completing)
-  val DummyEndpoint: Endpoint = (_ => DummyCompleting)
+  type Processing = (HttpServletRequest => Completing)
+  val DummyProcessing: Processing = (_ => DummyCompleting)
 
-  val NotFound: Endpoint = (req: HttpServletRequest) => (res: HttpServletResponse) => {
+  val NotFound: Processing = (req: HttpServletRequest) => (res: HttpServletResponse) => {
     res.setStatus(HttpServletResponse.SC_NOT_FOUND)
     val writer = res.getWriter
     writer.write("No endpoint available for [" + req.getPathInfo + "]")
@@ -42,10 +43,25 @@ trait Endpoints {
   }
 
   type Provider = PartialFunction[String, Endpoint]
+
+  sealed abstract class EndpointsMsg
+
   case class Find(url: String)
   case class Found(e: Endpoint)
   case class Attach(name: String, p: Provider)
   case class Detach(name: String)
+
+  sealed abstract class Endpoint
+  case class EndpointFunc(func: Processing) extends Endpoint
+  case class EndpointActor(a: ActorRef) extends Endpoint
+
+  object Endpoint {
+    def apply(a: ActorRef): Endpoint = EndpointActor(a)
+    def apply(func: Processing): Endpoint = EndpointFunc(func)
+  }
+
+  implicit def actor2Endpoint(a: ActorRef): Endpoint = Endpoint(a)
+  implicit def func2Endpoint(func: Processing): Endpoint = Endpoint(func)
 }
 
 object Endpoints extends Endpoints
@@ -53,9 +69,7 @@ object Endpoints extends Endpoints
 class EndpointsActor extends Actor with ActorLogging {
 
   import Endpoints._
-
-  private val providers = collection.mutable.Map[String, Provider]()
-
+  val providers = collection.mutable.Map[String, Provider]()
 
   protected def receive = {
     case Attach(name, provider) =>
@@ -66,7 +80,7 @@ class EndpointsActor extends Actor with ActorLogging {
       providers -= name
     case Find(url) =>
       log.debug("Looking for endpoint for '{}'", url)
-      val endpoint = providers.toList.collectFirst {
+      val endpoint: Endpoint = providers.toList.collectFirst {
         case (name, provider) if provider.isDefinedAt(url) =>
           log.debug("Endpoint '{}' found for '{}'", name, url)
           provider(url)

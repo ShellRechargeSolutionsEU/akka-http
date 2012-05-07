@@ -5,11 +5,11 @@ import org.specs2.specification.Scope
 import org.specs2.mutable.SpecificationWithJUnit
 import javax.servlet.AsyncEvent
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
-import akka.testkit.{TestFSMRef, TestKit}
-import akka.actor.{FSM, ActorSystem, Props}
 import Listener._
 import Async._
 import Endpoints._
+import akka.testkit.{TestActorRef, TestFSMRef, TestKit}
+import akka.actor.{Actor, FSM, ActorSystem, Props}
 
 
 /**
@@ -26,6 +26,12 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
     val asyncContext = AsyncContextMock()
 
     val actorRef = TestFSMRef(new AsyncActor)
+
+    lazy val endpointActor = TestActorRef(new Actor {
+      protected def receive = {
+        case req: HttpServletRequest => sender ! Complete(DummyCompleting)
+      }
+    })
 
     def asyncEventMessage(on: OnEvent) = AsyncEventMessage(new AsyncEvent(asyncContext, new Exception), on)
 
@@ -44,7 +50,14 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
     "look for defined endpoint for current request when started" >> new HttpContext {
       start()
       expectMsgType[Find]
-      actorRef ! Found(DummyEndpoint)
+      actorRef ! Found(DummyProcessing)
+      there was one(asyncContext).complete()
+      actorRef.isTerminated must beTrue
+    }
+    "pass processing scope to actor" >> new HttpContext {
+      start()
+      expectMsgType[Find]
+      actorRef ! Found(endpointActor)
       there was one(asyncContext).complete()
       actorRef.isTerminated must beTrue
     }
@@ -77,7 +90,7 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
 
       expectMsgType[Find]
       actorRef ! asyncEventMessage(OnTimeout)
-      actorRef ! Found(_ => completion)
+      actorRef ! Found(Endpoint(_ => completion))
       actorRef.isTerminated must beTrue
       called must beFalse
     }
@@ -92,7 +105,7 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
       }
 
       expectMsgType[Find]
-      actorRef ! Found(_ => completion)
+      actorRef ! Found(Endpoint(_ => completion))
       there was one(asyncContext).complete()
       called must beTrue
     }
@@ -112,7 +125,7 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
       }
 
       expectMsgType[Find]
-      actorRef ! Found(func)
+      actorRef ! Found(func _ )
 
       there was no(asyncContext).complete()
       called must beFalse
@@ -125,7 +138,7 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
       }
 
       expectMsgType[Find]
-      actorRef ! Found(func)
+      actorRef ! Found(func _)
 
       there was one(res).setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
       there was one(asyncContext).complete()
@@ -133,12 +146,10 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
     "response with 'Status Code 500' when exception while responding" >> new HttpContext {
       start()
 
-      def func(res: HttpServletResponse): (Boolean => Unit) = {
-        throw new Exception
-      }
+      val responseException = (res: HttpServletResponse) => throw new Exception
 
       expectMsgType[Find]
-      actorRef ! Found(_ => func)
+      actorRef ! Found(Endpoint(_ => responseException))
 
       there was one(res).setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
       there was one(asyncContext).complete()
@@ -148,7 +159,7 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
 
       expectMsgType[Find]
       var result = false
-      actorRef ! Found(_ => _ => result = _)
+      actorRef ! Found(Endpoint(_ => _ => result = _))
 
       there was one(asyncContext).complete()
       result must beTrue
@@ -159,7 +170,7 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
       expectMsgType[Find]
       asyncContext.complete() throws (new RuntimeException)
       var result = true
-      actorRef ! Found(_ => _ => result = _)
+      actorRef ! Found(Endpoint(_ => _ => result = _))
 
       there was one(asyncContext).complete()
       result must beFalse
