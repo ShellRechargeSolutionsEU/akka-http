@@ -5,7 +5,6 @@ import akka.actor._
 import akka.util.duration._
 import javax.servlet.{ServletRequest, ServletResponse, AsyncContext}
 import Endpoints._
-import Http._
 import Async._
 
 /**
@@ -15,18 +14,18 @@ class AsyncActor extends Actor with LoggingFSM[State, Data] {
 
   implicit def res2HttpRes(res: ServletResponse) = res.asInstanceOf[HttpServletResponse]
   implicit def req2HttpReq(req: ServletRequest) = req.asInstanceOf[HttpServletRequest]
-  val endpointTimeout = context.system.http.endpointRetrievalTimeout
+  val endpointTimeout = HttpExtension(context.system).endpointRetrievalTimeout
 
   startWith(Idle, Empty)
 
   when(Idle) {
     case Event(async: AsyncContext, Empty) =>
       val url = async.getRequest.getPathInfo
-      log.debug("Started async for '{}'", url)
-      context.system.http.endpoints ! Find(url)
-      goto(Started) using Context(async, url)
+      log.debug("AboutToProcess$ async for '{}'", url)
+      HttpExtension(context.system).endpoints ! Find(url)
+      goto(AboutToProcess) using Context(async, url)
   }
-  when(Started, endpointTimeout millis) {
+  when(AboutToProcess, endpointTimeout millis) {
     case Event(Found(EndpointFunc(func)), ctx@Context(_, url)) =>
       log.debug("Processing async for '{}'", url)
       safeProcess(func, ctx)
@@ -37,9 +36,9 @@ class AsyncActor extends Actor with LoggingFSM[State, Data] {
       log.debug("No endpoint received within {} millis for '{}'", endpointTimeout, url)
       safeProcess(NotFound, ctx)
   }
-  when(Completing) {
+  when(AboutToComplete) {
     case Event(Complete(completing), ctx@Context(async, url)) =>
-      log.debug("Completing async for '{}'", url)
+      log.debug("AboutToComplete$ async for '{}'", url)
 
       def doComplete(callback: Callback) {
         val success = try {
@@ -93,7 +92,7 @@ class AsyncActor extends Actor with LoggingFSM[State, Data] {
     catch InternalErrorOnException(async.url)
 
     //we want receive different messages before responding, for example 'Timeout'
-    goto(Completing) using async
+    goto(AboutToComplete) using async
   }
 
   def safeProcess(actor: ActorRef, async: Context): State = {
@@ -101,7 +100,7 @@ class AsyncActor extends Actor with LoggingFSM[State, Data] {
     catch InternalErrorOnException(async.url)
 
     //actor should respond with Complete(..) message
-    goto(Completing) using async
+    goto(AboutToComplete) using async
   }
 }
 
@@ -109,9 +108,8 @@ class AsyncActor extends Actor with LoggingFSM[State, Data] {
 object Async {
   sealed trait State
   case object Idle extends State
-  case object Started extends State
-  case object ProcessingRequest extends State
-  case object Completing extends State
+  case object AboutToProcess extends State
+  case object AboutToComplete extends State
 
   sealed trait Data
   case class Context(context: AsyncContext, url: String) extends Data

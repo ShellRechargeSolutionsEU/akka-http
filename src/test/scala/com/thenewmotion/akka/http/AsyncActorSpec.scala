@@ -39,7 +39,7 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
       actorRef.stateName mustEqual Idle
       actorRef.stateData mustEqual Empty
       actorRef ! asyncContext
-      actorRef.stateName mustEqual Started
+      actorRef.stateName mustEqual AboutToProcess
       actorRef.stateData mustEqual Context(asyncContext, "/test")
     }
 

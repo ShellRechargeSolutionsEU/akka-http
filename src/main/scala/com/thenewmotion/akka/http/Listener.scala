@@ -1,13 +1,13 @@
 package com.thenewmotion.akka.http
 
-import akka.actor.ActorRef
 import javax.servlet.{AsyncEvent, AsyncListener}
 import javax.servlet.http.HttpServletResponse
+import akka.actor.{ActorSystem, ActorRef}
 
 /**
  * @author Yaroslav Klymko
  */
-class Listener(actor: ActorRef, system: ActorHttpSystem) extends AsyncListener {
+class Listener(actor: ActorRef, system: ActorSystem) extends AsyncListener {
 
   import Listener._
 
@@ -28,7 +28,7 @@ class Listener(actor: ActorRef, system: ActorHttpSystem) extends AsyncListener {
     val asyncContext = event.getAsyncContext
 
     val res = asyncContext.getResponse.asInstanceOf[HttpServletResponse]
-    val (name, value) = system.expiredHeader()
+    val (name, value) = HttpExtension(system).expiredHeader
     res.addHeader(name, value)
     asyncContext.complete()
   }

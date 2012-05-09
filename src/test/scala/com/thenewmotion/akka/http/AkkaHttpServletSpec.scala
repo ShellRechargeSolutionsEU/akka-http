@@ -32,8 +32,7 @@ class AkkaHttpServletSpec extends SpecificationWithJUnit {
 
     "shutdown ActorSystem on destroy" >> {
       servlet._actorSystem must beSome
-      val httpSystem = servlet._actorSystem.get
-      val system = httpSystem.system
+      val system = servlet._actorSystem.get
       servlet.destroy()
       system.awaitTermination()
       system.isTerminated must beTrue
