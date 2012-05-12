@@ -8,22 +8,6 @@ import akka.actor.{ActorRef, ActorLogging, Actor}
  */
 trait Endpoints {
 
-  /*
-  (req: HttpServletRequest) => {
-    // REQUEST SCOPE
-    // heavy scope, actually this is a place async is needed for
-    // async request might expire
-    (res: HttpServletResponse) => {
-      // RESPONSE SCOPE
-      // lite scope for putting collected data to response, called if not expired
-      (callback: Boolean) => {
-        // CALLBACK SCOPE
-        // called to notify whether response sent successfully
-      }
-    }
-  }
-  */
-
   type Callback = (Boolean => Unit)
   val DummyCallback: Callback = _ => ()
 
