@@ -19,7 +19,9 @@ trait AkkaHttp {
   protected def newHttpSystem(): ActorSystem = {
     val name = ConfigFactory.load().getString("akka.http.system-name")
     val system = ActorSystem(name)
-    system.actorOf(Props[EndpointsActor], HttpExtension(system).endpointsName)
+    val ext = HttpExtension(system)
+    system.actorOf(Props[EndpointsActor], ext.EndpointsName)
+    if (ext.LogConfigOnInit) ext.logConfiguration()
     system
   }
 
@@ -42,7 +44,7 @@ trait AkkaHttp {
     val actor = system.actorOf(props)
 
     val asyncContext = req.startAsync()
-    asyncContext.setTimeout(HttpExtension(system).asyncTimeout)
+    asyncContext.setTimeout(HttpExtension(system).AsyncTimeout)
     asyncContext.addListener(new Listener(actor, system))
 
     actor ! asyncContext

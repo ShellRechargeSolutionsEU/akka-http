@@ -14,7 +14,7 @@ class AsyncActor extends Actor with LoggingFSM[State, Data] {
 
   implicit def res2HttpRes(res: ServletResponse) = res.asInstanceOf[HttpServletResponse]
   implicit def req2HttpReq(req: ServletRequest) = req.asInstanceOf[HttpServletRequest]
-  val endpointTimeout = HttpExtension(context.system).endpointRetrievalTimeout
+  val endpointTimeout = HttpExtension(context.system).EndpointRetrievalTimeout
 
   startWith(Idle, Empty)
 

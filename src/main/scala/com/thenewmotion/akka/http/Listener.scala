@@ -28,7 +28,7 @@ class Listener(actor: ActorRef, system: ActorSystem) extends AsyncListener {
     val asyncContext = event.getAsyncContext
 
     val res = asyncContext.getResponse.asInstanceOf[HttpServletResponse]
-    val (name, value) = HttpExtension(system).expiredHeader
+    val (name, value) = HttpExtension(system).ExpiredHeader
     res.addHeader(name, value)
     asyncContext.complete()
   }
