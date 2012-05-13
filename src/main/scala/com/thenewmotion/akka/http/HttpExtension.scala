@@ -1,22 +1,10 @@
 package com.thenewmotion.akka.http
 
-import com.typesafe.config.ConfigFactory
 import akka.actor._
-
 
 /**
  * @author Yaroslav Klymko
  */
-
-object HttpSystem {
-  def apply(): ActorSystem = {
-    val name = ConfigFactory.load().getString("akka.http.system-name")
-    val system = ActorSystem(name)
-    system.actorOf(Props[EndpointsActor], HttpExtension(system).endpointsName)
-    system
-  }
-}
-
 class HttpExtension(val system: ActorSystem) extends Extension {
   private val config = system.settings.config
   import config._
