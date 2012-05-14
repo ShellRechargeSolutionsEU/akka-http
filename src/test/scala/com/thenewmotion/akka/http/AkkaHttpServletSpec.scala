@@ -15,9 +15,9 @@ class AkkaHttpServletSpec extends SpecificationWithJUnit {
   "AkkaHttpServlet" should {
 
     "create ActorSystem on init" >> {
-      servlet._actorSystem must beNone
+      servlet.actorSystem must beNone
       servlet.init()
-      servlet._actorSystem must beSome
+      servlet.actorSystem must beSome
     }
 
     "create actor for each request" >> {
@@ -31,12 +31,12 @@ class AkkaHttpServletSpec extends SpecificationWithJUnit {
     }
 
     "shutdown ActorSystem on destroy" >> {
-      servlet._actorSystem must beSome
-      val system = servlet._actorSystem.get
+      servlet.actorSystem must beSome
+      val system = servlet.actorSystem.get
       servlet.destroy()
       system.awaitTermination()
       system.isTerminated must beTrue
-      servlet._actorSystem must beNone
+      servlet.actorSystem must beNone
     }
   }
 }
