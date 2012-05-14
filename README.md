@@ -5,7 +5,7 @@ Akka Http is not a webframework. It's an Akka based implementation of asynchrono
 Each request will have own actor. Actor will live until async request is processed and completed or time is out.
 Processing of async request is divided by different unit of work. All these work units will be processed one by one, however
 Actor may receive one of the javax.servlet.AsyncEvent between. In case of Error, Timeout or Complete events actor will stop processing and shutdown.
-So all work untis will be droped.
+So all work units left will be dropped.
 
 Examples
 ========
@@ -20,7 +20,7 @@ Scopes
 
 Async context has been divided on different scopes. Each scope is a synchronous unit of work
 
-* Request scope. Expected to be the heaviest scope. All request logic shhould go here
+* Request scope. Expected to be the heaviest scope. All request related logic shhould go here
 
 * Response scope. Light scope for putting request result in response
 
