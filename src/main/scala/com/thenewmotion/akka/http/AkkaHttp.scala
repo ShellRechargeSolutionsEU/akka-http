@@ -12,16 +12,25 @@ trait AkkaHttp {
   private[http] var _actorSystem: Option[ActorSystem] = None
 
   private[http] def initAkkaSystem() {
-    _actorSystem = Some(newHttpSystem())
-    onSystemInit(_actorSystem.get)
+    val system = newHttpSystem()
+    _actorSystem = Some(system)
+    onSystemInit(system)
+    system.log.info("Akka Http System '{}' created", system)
+    logConfigOnInit()
+  }
+
+  private[http] def logConfigOnInit() {
+    _actorSystem.foreach {
+      system =>
+        val ext = HttpExtension(system)
+        if (ext.LogConfigOnInit) ext.logConfiguration()
+    }
   }
 
   protected def newHttpSystem(): ActorSystem = {
     val name = ConfigFactory.load().getString("akka.http.system-name")
     val system = ActorSystem(name)
-    val ext = HttpExtension(system)
-    system.actorOf(Props[EndpointsActor], ext.EndpointsName)
-    if (ext.LogConfigOnInit) ext.logConfiguration()
+    system.actorOf(Props[EndpointsActor], HttpExtension(system).EndpointsName)
     system
   }
 
