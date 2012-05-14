@@ -38,7 +38,7 @@ class AsyncActor extends Actor with LoggingFSM[State, Data] {
   }
   when(AboutToComplete) {
     case Event(Complete(completing), ctx@Context(async, url)) =>
-      log.debug("AboutToComplete$ async for '{}'", url)
+      log.debug("AboutToComplete async for '{}'", url)
 
       def doComplete(callback: Callback) {
         val success = try {
@@ -65,7 +65,6 @@ class AsyncActor extends Actor with LoggingFSM[State, Data] {
   whenUnhandled {
     case Event(Listener.AsyncEventMessage(event, on), Context(_, url)) =>
       import Listener._
-      log.debug(on.toString)
       on match {
         case OnStartAsync => stay()
         case OnTimeout | OnComplete => stop()
