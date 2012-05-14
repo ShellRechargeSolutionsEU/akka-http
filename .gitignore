@@ -4,4 +4,6 @@
 *.ipr
 *.iws
 .buildpath
+
+# Maven
 /target/
