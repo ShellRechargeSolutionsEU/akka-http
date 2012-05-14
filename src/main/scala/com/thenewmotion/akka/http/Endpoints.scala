@@ -69,7 +69,7 @@ class EndpointsActor extends Actor with ActorLogging {
           log.debug("Endpoint '{}' found for '{}'", name, url)
           provider(url)
       } getOrElse {
-        log.debug("Not endpoint found for '{}'", url)
+        log.debug("No endpoint found for '{}'", url)
         NotFound
       }
       sender ! Found(endpoint)
