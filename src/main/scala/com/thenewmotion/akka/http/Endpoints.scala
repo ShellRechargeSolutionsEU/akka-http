@@ -28,8 +28,6 @@ trait Endpoints {
 
   type Provider = PartialFunction[String, Endpoint]
 
-  sealed abstract class EndpointsMsg
-
   case class Find(url: String)
   case class Found(e: Endpoint)
   case class Attach(name: String, p: Provider)
