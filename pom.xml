@@ -8,6 +8,13 @@
         <version>1.5</version>
     </parent>
 
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+        </license>
+    </licenses>
+
     <groupId>com.thenewmotion.akka</groupId>
     <artifactId>akka-http</artifactId>
     <version>0.0.1-SNAPSHOT</version>
