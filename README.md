@@ -75,8 +75,6 @@ RequestMethod was removed. However you are able to use HttpServletRequest/Respon
             </body>
           </html>.toString())
         res.getWriter.close()
-        res.getWriter.write(
-
 
         // our callback whether response succeed
         (b: Boolean) => println("SUCCEED: " + b)
