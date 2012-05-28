@@ -57,30 +57,30 @@ RequestMethod was removed. However you are able to use HttpServletRequest/Respon
 
 * Using new akka 2.0 akka-http
 
-                  def receive = {
-                    case req: HttpServletRequest =>
+          def receive = {
+            case req: HttpServletRequest =>
 
-                      // doing some heavy work here then
+              // doing some heavy work here
 
-                      //will be called for completing request
-                      val func = (res: HttpServletResponse) => {
-                        res.getWriter.write(
-                          <html>
-                            <body>
-                              <h1>Hello World</h1>
-                              <h3>endpoint actor</h3>
-                            </body>
-                          </html>.toString())
-                        res.getWriter.close()
+              //will be called for completing request
+              val func = (res: HttpServletResponse) => {
+                res.getWriter.write(
+                  <html>
+                    <body>
+                      <h1>Hello World</h1>
+                      <h3>endpoint actor</h3>
+                    </body>
+                  </html>.toString())
+                res.getWriter.close()
 
 
-                        // our callback whether response succeed
-                        (b: Boolean) => println("SUCCEED: " + b)
-                      }
+                // our callback whether response succeed
+                (b: Boolean) => println("SUCCEED: " + b)
+              }
 
-                      //passing func to AsyncActor, created for this AsyncContext
-                      sender ! Complete(func)
-                  }
+              //passing func to AsyncActor, created for this AsyncContext
+              sender ! Complete(func)
+          }
 
 MistSettings
 ------------
