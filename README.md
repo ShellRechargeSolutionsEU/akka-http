@@ -82,6 +82,14 @@ RequestMethod was removed. However you are able to use HttpServletRequest/Respon
               sender ! Complete(func)
           }
 
+
+Endpoints
+---------
+
+We are not using Endpoint hierarchy from akka-mist. We have single EndpointsActor instead where you can find/add/remove endpoint in runtime,
+you can find appropriate commands in `Endpoints.scala`.
+It's possible to retrieve this actor via HttpExtension `HttpExtension(system).endpoints` or direclty `system.actorFor("/user/endpoints")`
+
 MistSettings
 ------------
 

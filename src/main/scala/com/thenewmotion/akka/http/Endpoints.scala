@@ -6,7 +6,7 @@ import akka.actor.{ActorRef, ActorLogging, Actor}
 /**
  * @author Yaroslav Klymko
  */
-trait Endpoints {
+object Endpoints {
 
   type Callback = (Boolean => Unit)
   val DummyCallback: Callback = _ => ()
@@ -45,8 +45,6 @@ trait Endpoints {
   implicit def actor2Endpoint(a: ActorRef): Endpoint = Endpoint(a)
   implicit def func2Endpoint(func: Processing): Endpoint = Endpoint(func)
 }
-
-object Endpoints extends Endpoints
 
 class EndpointsActor extends Actor with ActorLogging {
 
