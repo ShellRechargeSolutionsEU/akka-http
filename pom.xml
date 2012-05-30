@@ -21,7 +21,7 @@
     <url>https://github.com/thenewmotion/akka-http</url>
 
     <properties>
-        <scala.version>2.9.1</scala.version>
+        <scala.version>2.9.2</scala.version>
         <akka.version>2.0.1</akka.version>
         <tomcat.version>7.0.27</tomcat.version>
     </properties>
