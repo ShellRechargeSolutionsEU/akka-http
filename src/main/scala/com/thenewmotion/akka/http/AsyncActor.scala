@@ -21,8 +21,8 @@ class AsyncActor extends Actor with LoggingFSM[State, Data] {
   when(Idle) {
     case Event(async: AsyncContext, Empty) =>
       val url = async.getRequest.getPathInfo
-      log.debug("AboutToProcess$ async for '{}'", url)
       HttpExtension(context.system).endpoints ! Find(url)
+      log.debug("About to process async for '{}'", url)
       goto(AboutToProcess) using Context(async, url)
   }
   when(AboutToProcess, endpointTimeout millis) {
@@ -38,7 +38,7 @@ class AsyncActor extends Actor with LoggingFSM[State, Data] {
   }
   when(AboutToComplete) {
     case Event(Complete(completing), ctx@Context(async, url)) =>
-      log.debug("AboutToComplete async for '{}'", url)
+      log.debug("About to complete async for '{}'", url)
 
       def doComplete(callback: Callback) {
         val success = try {

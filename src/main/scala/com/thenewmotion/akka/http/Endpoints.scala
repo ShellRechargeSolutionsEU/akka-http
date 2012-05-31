@@ -21,8 +21,8 @@ object Endpoints {
     res.setStatus(HttpServletResponse.SC_NOT_FOUND)
     val writer = res.getWriter
     writer.write("No endpoint available for [" + req.getPathInfo + "]")
-    writer.flush()
     writer.close()
+    res.flushBuffer()
     DummyCallback
   }
 
