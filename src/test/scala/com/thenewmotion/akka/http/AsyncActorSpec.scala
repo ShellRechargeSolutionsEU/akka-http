@@ -151,7 +151,7 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
       expectMsgType[Find]
       actorRef ! Found(Endpoint(_ => responseException))
 
-      there was one(res).setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
+      there was one(res).sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, null)
       there was one(asyncContext).complete()
     }
     "pass to enpoint true if completed successfully" >> new HttpContext {

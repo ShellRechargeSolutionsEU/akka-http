@@ -1,11 +1,15 @@
 package com.thenewmotion.akka.http
 
-import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
+
 import akka.actor._
 import akka.util.duration._
-import javax.servlet.{ServletRequest, ServletResponse, AsyncContext}
 import Endpoints._
 import Async._
+import ext.Response
+import javax.servlet.{ServletRequest, ServletResponse, AsyncContext}
+import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
+import HttpServletResponse.SC_INTERNAL_SERVER_ERROR
+
 
 /**
  * @author Yaroslav Klymko
@@ -55,8 +59,8 @@ class AsyncActor extends Actor with LoggingFSM[State, Data] {
       val res = async.getResponse
       try doComplete(completing(res)) catch {
         case e: Exception =>
-          log.error("Exception while responding for '{}'", url)
-          res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
+          log.error(e, "Exception while responding for '{}'", url)
+          res.sendError(SC_INTERNAL_SERVER_ERROR, e.getMessage)
           doComplete(DummyCallback)
       }
       stop()
@@ -79,11 +83,7 @@ class AsyncActor extends Actor with LoggingFSM[State, Data] {
   def InternalErrorOnException(url: String): PartialFunction[Throwable, Unit] = {
     case e: Exception =>
       log.error(e, "Exception while serving request for '{}'", url)
-      val internalError = (res: HttpServletResponse) => {
-        res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
-        DummyCallback
-      }
-      self ! Complete(internalError)
+      self ! Complete(Response(SC_INTERNAL_SERVER_ERROR, e.getMessage))
   }
 
   def safeProcess(endpoint: Processing, async: Context): State = {

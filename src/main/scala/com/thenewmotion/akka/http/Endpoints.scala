@@ -2,6 +2,7 @@ package com.thenewmotion.akka.http
 
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
 import akka.actor.{ActorRef, ActorLogging, Actor}
+import ext.Response
 
 /**
  * @author Yaroslav Klymko
@@ -17,14 +18,9 @@ object Endpoints {
   type Processing = (HttpServletRequest => Completing)
   val DummyProcessing: Processing = (_ => DummyCompleting)
 
-  val NotFound: Processing = (req: HttpServletRequest) => (res: HttpServletResponse) => {
-    res.setStatus(HttpServletResponse.SC_NOT_FOUND)
-    val writer = res.getWriter
-    writer.write("No endpoint available for [" + req.getPathInfo + "]")
-    writer.close()
-    res.flushBuffer()
-    DummyCallback
-  }
+  val NotFound: Processing = (req: HttpServletRequest) => Response.apply(
+    HttpServletResponse.SC_NOT_FOUND,
+    "No endpoint available for [" + req.getPathInfo + "]")
 
   type Provider = PartialFunction[String, Endpoint]
 

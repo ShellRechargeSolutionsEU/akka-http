@@ -54,14 +54,8 @@
         <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-testkit</artifactId>
-            <scope>test</scope>
             <version>${akka.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.0.3</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
