@@ -18,7 +18,7 @@ object Endpoints {
   type Processing = (HttpServletRequest => Completing)
   val DummyProcessing: Processing = (_ => DummyCompleting)
 
-  val NotFound: Processing = (req: HttpServletRequest) => Response.apply(
+  val NotFound: Processing = (req: HttpServletRequest) => Response(
     HttpServletResponse.SC_NOT_FOUND,
     "No endpoint available for [" + req.getPathInfo + "]")
 
