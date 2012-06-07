@@ -28,7 +28,7 @@ trait AkkaHttp {
     }
   }
 
-  protected[http] def newHttpSystem(): ActorSystem = {
+  protected def newHttpSystem(): ActorSystem = {
     val name = ConfigFactory.load().getString("akka.http.system-name")
     ActorSystem(name)
   }
