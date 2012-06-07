@@ -9,11 +9,12 @@ import com.typesafe.config.ConfigFactory
  */
 trait AkkaHttp {
 
-  protected[http] var actorSystem: Option[ActorSystem] = None
+  private[http] var actorSystem: Option[ActorSystem] = None
 
   private[http] def initAkkaSystem() {
     val system = newHttpSystem()
     actorSystem = Some(system)
+    system.actorOf(Props[EndpointsActor], HttpExtension(system).EndpointsName)
     onSystemInit(system)
     system.log.info("Akka Http System '{}' created", system)
     logConfigOnInit()
@@ -29,9 +30,7 @@ trait AkkaHttp {
 
   protected[http] def newHttpSystem(): ActorSystem = {
     val name = ConfigFactory.load().getString("akka.http.system-name")
-    val system = ActorSystem(name)
-    system.actorOf(Props[EndpointsActor], HttpExtension(system).EndpointsName)
-    system
+    ActorSystem(name)
   }
 
   private[http] def destroyAkkaSystem() {
