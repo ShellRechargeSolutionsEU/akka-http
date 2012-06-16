@@ -117,17 +117,18 @@
         </resources>
         <plugins>
             <plugin>
-                <groupId>org.scala-tools</groupId>
-                <artifactId>maven-scala-plugin</artifactId>
-                <version>2.15.2</version>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <version>3.0.2</version>
                 <configuration>
+                    <scalaVersion>${scala.version}</scalaVersion>
                     <args>
                         <arg>-unchecked</arg>
                         <arg>-deprecation</arg>
                         <arg>-explaintypes</arg>
                     </args>
                     <jvmArgs>
-                        <jvmArg>-Xmx1024m</jvmArg>
+                        <jvmArg>-Xmx512m</jvmArg>
                         <jvmArg>-server</jvmArg>
                         <jvmArg>-Xss1m</jvmArg>
                         <jvmArg>-XX:+TieredCompilation</jvmArg>
