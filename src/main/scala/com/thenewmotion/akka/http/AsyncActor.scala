@@ -5,7 +5,6 @@ import akka.actor._
 import akka.util.duration._
 import Endpoints._
 import Async._
-import ext.Response
 import javax.servlet.{ServletRequest, ServletResponse, AsyncContext}
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
 import HttpServletResponse.SC_INTERNAL_SERVER_ERROR
@@ -37,7 +36,7 @@ class AsyncActor(val endpoints: EndpointFinder) extends Actor with LoggingFSM[St
 
       endpoint match {
         case EndpointFunc(func) =>
-          log.debug("Processing async for '{}'", url)
+          log.debug("RequestResponse$ async for '{}'", url)
           safeProcess(func, ctx)
         case EndpointActor(actor) =>
           log.debug("Passing async processing scope to endpoint actor for '{}'", url)
@@ -48,28 +47,33 @@ class AsyncActor(val endpoints: EndpointFinder) extends Actor with LoggingFSM[St
   }
 
   when(AboutToComplete) {
-    case Event(Complete(completing), ctx@Context(async, url)) =>
+    case Event(Complete(future), ctx@Context(async, url)) =>
       log.debug("About to complete async for '{}'", url)
 
-      def doComplete(callback: Callback) {
-        val success = try {
-          async.complete()
-          true
+      def tryo(func: => Unit)(onException: Exception => Unit): Option[Throwable] = {
+        try {
+          func; None
         } catch {
-          case e: Exception =>
-            log.error(e, "Exception while completing async for '{}'", url)
-            false
+          case e: Exception => onException(e); Some(e)
         }
-        callback(success)
       }
 
       val res = async.getResponse
-      try doComplete(completing(res)) catch {
-        case e: Exception =>
-          log.error(e, "Exception while responding for '{}'", url)
+      val safeRespond = tryo(future(res)) {
+        e =>
+          log.error(e, "{} while responding for '{}': {}", e.getClass.getSimpleName, url, e.getMessage)
           res.sendError(SC_INTERNAL_SERVER_ERROR, e.getMessage)
-          doComplete(DummyCallback)
       }
+
+      val safeComplete = tryo(async.complete()) {
+        e => log.error(e, "{} while completing async for '{}': {} ", e.getClass.getSimpleName, url, e.getMessage)
+      }
+
+      future.onComplete.lift(safeRespond match {
+        case None => safeComplete
+        case some => some
+      })
+
       stop()
   }
 
@@ -89,11 +93,11 @@ class AsyncActor(val endpoints: EndpointFinder) extends Actor with LoggingFSM[St
 
   def InternalErrorOnException(url: String): PartialFunction[Throwable, Unit] = {
     case e: Exception =>
-      log.error(e, "Exception while serving request for '{}'", url)
-      self ! Complete(Response(SC_INTERNAL_SERVER_ERROR, e.getMessage))
+      log.error(e, "{} while serving request for '{}': {}", e.getClass.getSimpleName, url, e.getMessage)
+      self ! Complete(FutureResponse(SC_INTERNAL_SERVER_ERROR, e.getMessage))
   }
 
-  def safeProcess(endpoint: Processing, async: Context) {
+  def safeProcess(endpoint: RequestResponse, async: Context) {
     try self ! Complete(endpoint(async.context.getRequest))
     catch InternalErrorOnException(async.url)
   }
@@ -104,7 +108,6 @@ class AsyncActor(val endpoints: EndpointFinder) extends Actor with LoggingFSM[St
   }
 }
 
-
 object Async {
   sealed trait State
   case object AboutToProcess extends State
@@ -114,5 +117,5 @@ object Async {
   case class Context(context: AsyncContext, url: String) extends Data
   case object Empty extends Data
 
-  case class Complete(func: Completing)
+  case class Complete(func: FutureResponse)
 }

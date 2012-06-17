@@ -12,25 +12,29 @@ class Listener(actor: ActorRef, system: ActorSystem) extends AsyncListener {
   import Listener._
 
   def onComplete(event: AsyncEvent) {
-    actor ! AsyncEventMessage(event, OnComplete)
+    tell(event, OnComplete)
   }
 
   def onError(event: AsyncEvent) {
-    actor ! AsyncEventMessage(event, OnError)
+    tell(event, OnError)
   }
 
   def onStartAsync(event: AsyncEvent) {
-    actor ! AsyncEventMessage(event, OnStartAsync)
+    tell(event, OnStartAsync)
   }
 
   def onTimeout(event: AsyncEvent) {
-    actor ! AsyncEventMessage(event, OnTimeout)
+    tell(event, OnTimeout)
     val asyncContext = event.getAsyncContext
 
     val res = asyncContext.getResponse.asInstanceOf[HttpServletResponse]
     val (name, value) = HttpExtension(system).ExpiredHeader
     res.addHeader(name, value)
     asyncContext.complete()
+  }
+
+  private def tell(event: AsyncEvent, on: OnEvent) {
+    actor ! AsyncEventMessage(event, on)
   }
 }
 

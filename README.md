@@ -24,8 +24,6 @@ Async context has been divided on different scopes. Each scope is a synchronous 
 
 * Response scope. Light scope for putting request result in response
 
-* Callback scope. Simple callback function. Passes `TRUE` when response succeeded, `FALSE` otherwise.
-
 We need scope to receive async event messages in between. Thus will allow us to avoid various exceptions
 For example you may get `response time out exception` or `response already completed`, etc.
 Also you can avoid odd operations when requrest has expired.
@@ -66,22 +64,20 @@ RequestMethod was removed. However you are able to use HttpServletRequest/Respon
       // doing some heavy work here
 
       //will be called for completing request
-      val func = (res: HttpServletResponse) => {
-        res.getWriter.write(
-          <html>
-            <body>
-              <h1>Hello World</h1>
-              <h3>endpoint actor</h3>
-            </body>
-          </html>.toString())
-        res.getWriter.close()
-
-        // our callback whether response succeed
-        (b: Boolean) => println("SUCCEED: " + b)
+      val future = FutureResponse {
+        res =>
+          res.getWriter.write(
+            <html>
+              <body>
+                <h1>Hello World</h1>
+                <h3>endpoint actor</h3>
+              </body>
+            </html>.toString())
+          res.getWriter.close()
       }
 
-      //passing func to AsyncActor, created for this AsyncContext
-      sender ! Complete(func)
+      //passing `future` to AsyncActor, created for this AsyncContext
+      sender ! Complete(future)
   }
 ```
 
@@ -89,9 +85,7 @@ RequestMethod was removed. However you are able to use HttpServletRequest/Respon
 Endpoints
 ---------
 
-We are not using Endpoint hierarchy from akka-mist. We have single EndpointsActor instead where you can find/add/remove endpoint in runtime,
-you can find appropriate commands in `Endpoints.scala`.
-It's possible to retrieve this actor via HttpExtension `HttpExtension(system).endpoints` or direclty `system.actorFor("/user/endpoints")`
+We are not using Endpoint hierarchy from akka-mist. We have single `EndpointsAgent(akka.agent)` instead where you can find/attach/detach endpoint in the runtime.
 
 MistSettings
 ------------

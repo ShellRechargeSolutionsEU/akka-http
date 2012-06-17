@@ -1,8 +1,7 @@
 package com.thenewmotion.akka.http
 
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
-import akka.actor.{ActorSystem, ActorRef, ActorLogging, Actor}
-import ext.Response
+import akka.actor.{ActorSystem, ActorRef}
 import akka.agent.Agent
 
 /**
@@ -10,32 +9,31 @@ import akka.agent.Agent
  */
 object Endpoints {
 
-  type Callback = (Boolean => Unit)
-  val DummyCallback: Callback = _ => ()
+  type RequestResponse = (HttpServletRequest => FutureResponse)
 
-  type Completing = (HttpServletResponse => Callback)
-  val DummyCompleting: Completing = _ => DummyCallback
+  object RequestResponse {
+    def apply(func: HttpServletRequest => FutureResponse): RequestResponse = func
+    def apply(future: FutureResponse): RequestResponse = apply(req => future)
+  }
 
-  type Processing = (HttpServletRequest => Completing)
-  val DummyProcessing: Processing = (_ => DummyCompleting)
-
-  val NotFound: Processing = (req: HttpServletRequest) => Response(
+  val NotFound = RequestResponse(req => FutureResponse(
     HttpServletResponse.SC_NOT_FOUND,
-    "No endpoint available for [" + req.getPathInfo + "]")
+    "No endpoint available for [" + req.getPathInfo + "]"
+  ))
 
   type Provider = PartialFunction[String, Endpoint]
 
   sealed abstract class Endpoint
-  case class EndpointFunc(func: Processing) extends Endpoint
+  case class EndpointFunc(func: RequestResponse) extends Endpoint
   case class EndpointActor(a: ActorRef) extends Endpoint
 
   object Endpoint {
     def apply(a: ActorRef): Endpoint = EndpointActor(a)
-    def apply(func: Processing): Endpoint = EndpointFunc(func)
+    def apply(func: RequestResponse): Endpoint = EndpointFunc(func)
   }
 
   implicit def actor2Endpoint(a: ActorRef): Endpoint = Endpoint(a)
-  implicit def func2Endpoint(func: Processing): Endpoint = Endpoint(func)
+  implicit def func2Endpoint(func: RequestResponse): Endpoint = Endpoint(func)
 }
 
 trait EndpointFinder {

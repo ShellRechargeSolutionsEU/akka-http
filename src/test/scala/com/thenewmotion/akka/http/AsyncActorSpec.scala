@@ -25,7 +25,7 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
 
     lazy val endpointActor = TestActorRef(new Actor {
       protected def receive = {
-        case req: HttpServletRequest => sender ! Complete(DummyCompleting)
+        case req: HttpServletRequest => sender ! Complete(FutureResponse{_ => })
       }
     })
 
@@ -51,7 +51,7 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
 
   "AsyncActor" should {
     "look for defined endpoint for current request when started" >> new HttpContext {
-      start(DummyProcessing)
+      start()
       there was one(asyncContext).complete()
       actorRef.isTerminated must beTrue
     }
@@ -73,44 +73,31 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
     "stop self on Timeout event" >> new HttpContext {
       var called = false
 
-      def completion(res: HttpServletResponse): (Boolean => Unit) = {
-        called = true
-        DummyCallback
+      val endpoint = RequestResponse {
+        req =>
+          actorRef ! asyncEventMessage(OnTimeout)
+          FutureResponse(_ => called = true)
       }
 
-      def processing(req: HttpServletRequest): Completing = {
-        actorRef ! asyncEventMessage(OnTimeout)
-        completion
-      }
-
-      start(processing _)
+      start(endpoint)
 
       actorRef.isTerminated must beTrue
       called must beFalse
     }
     "response if async not completed" >> new HttpContext {
       var called = false
-
-      def completion(res: HttpServletResponse): (Boolean => Unit) = {
-        called = true
-        DummyCallback
-      }
-
-      start(Endpoint(_ => completion))
+      start(Endpoint(_ => FutureResponse(_ => called = true)))
       there was one(asyncContext).complete()
       called must beTrue
     }
     "not response if async already completed" >> new HttpContext {
       var called = false
 
-      def completion(res: HttpServletResponse): (Boolean => Unit) = {
-        called = true
-        DummyCallback
-      }
-
-      def func(req: HttpServletRequest): (HttpServletResponse => Boolean => Unit) = {
+      def func(req: HttpServletRequest) = {
         actorRef ! asyncEventMessage(OnTimeout)
-        completion
+        FutureResponse {
+          _ => called = true
+        }
       }
 
       start(func _)
@@ -122,32 +109,44 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
       there was one(res).setStatus(HttpServletResponse.SC_NOT_FOUND)
     }
     "response with 'Status Code 500' when exception while processing request" >> new HttpContext {
-      def func(req: HttpServletRequest): (HttpServletResponse => Boolean => Unit) = {
-        throw new Exception
-      }
-
-      start(func _)
+      start(RequestResponse(req => throw new Exception))
       there was one(res).setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
       there was one(asyncContext).complete()
     }
     "response with 'Status Code 500' when exception while responding" >> new HttpContext {
-      val responseException = (res: HttpServletResponse) => throw new Exception
-
-      start(Endpoint(_ => responseException))
-
+      start(RequestResponse(FutureResponse {
+        res => throw new Exception
+      }))
       there was one(res).sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, null)
       there was one(asyncContext).complete()
     }
-    "pass to enpoint true if completed successfully" >> new HttpContext {
+    "call `onComplete` with None if completed successfully" >> new HttpContext {
       var result = false
-      start(Endpoint(_ => _ => result = _))
+      val future = new FutureResponse {
+        def apply(res: HttpServletResponse) {}
+
+        def onComplete = {
+          case None => result = true
+        }
+      }
+      start(RequestResponse(future))
       there was one(asyncContext).complete()
       result must beTrue
     }
-    "pass to endpoint false if not completed successfully" >> new HttpContext {
+    "call `onComplete` with Some(Exception) if completed unsuccessfully" >> new HttpContext {
       asyncContext.complete() throws (new RuntimeException)
+
       var result = true
-      start(Endpoint(_ => _ => result = _))
+
+      val future = new FutureResponse {
+        def apply(res: HttpServletResponse) {}
+
+        def onComplete = {
+          case Some(_: RuntimeException) => result = false
+        }
+      }
+
+      start(RequestResponse(future))
 
       there was one(asyncContext).complete()
       result must beFalse
