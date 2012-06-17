@@ -12,9 +12,7 @@ class ConfigSpec extends SpecificationWithJUnit {
       getString("expired-header-name") mustEqual "Async-Timeout"
       getString("expired-header-value") mustEqual "expired"
       getString("system-name") mustEqual "http"
-      getString("endpoints-actor-name") mustEqual "endpoints"
       getLong("timeout") mustEqual 1000L
-      getLong("endpoint-retrieval-timeout") mustEqual 100L
       getBoolean("log-http-config-on-init") must beFalse
     }
   }

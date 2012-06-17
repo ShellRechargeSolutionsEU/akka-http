@@ -14,32 +14,39 @@ import HttpServletResponse.SC_INTERNAL_SERVER_ERROR
 /**
  * @author Yaroslav Klymko
  */
-class AsyncActor extends Actor with LoggingFSM[State, Data] {
+class AsyncActor(val endpoints: EndpointFinder) extends Actor with LoggingFSM[State, Data] {
 
   implicit def res2HttpRes(res: ServletResponse) = res.asInstanceOf[HttpServletResponse]
   implicit def req2HttpReq(req: ServletRequest) = req.asInstanceOf[HttpServletRequest]
-  val endpointTimeout = HttpExtension(context.system).EndpointRetrievalTimeout
 
-  startWith(Idle, Empty)
+  startWith(AboutToProcess, Empty)
 
-  when(Idle) {
+  when(AboutToProcess) {
     case Event(async: AsyncContext, Empty) =>
       val url = async.getRequest.getPathInfo
-      HttpExtension(context.system).endpoints ! Find(url)
       log.debug("About to process async for '{}'", url)
-      goto(AboutToProcess) using Context(async, url)
+
+      val endpoint: Endpoint = endpoints.find(url) match {
+        case Some(e) => e
+        case None =>
+          log.debug("No endpoint found for '{}'", url)
+          NotFound
+      }
+
+      val ctx = Context(async, url)
+
+      endpoint match {
+        case EndpointFunc(func) =>
+          log.debug("Processing async for '{}'", url)
+          safeProcess(func, ctx)
+        case EndpointActor(actor) =>
+          log.debug("Passing async processing scope to endpoint actor for '{}'", url)
+          safeProcess(actor, ctx)
+      }
+
+      goto(AboutToComplete) using ctx
   }
-  when(AboutToProcess, endpointTimeout millis) {
-    case Event(Found(EndpointFunc(func)), ctx@Context(_, url)) =>
-      log.debug("Processing async for '{}'", url)
-      safeProcess(func, ctx)
-    case Event(Found(EndpointActor(actor)), ctx@Context(async, url)) =>
-      log.debug("Passing async processing scope to endpoint actor for '{}'", url)
-      safeProcess(actor, ctx)
-    case Event(FSM.StateTimeout, ctx@Context(_, url)) =>
-      log.debug("No endpoint received within {} millis for '{}'", endpointTimeout, url)
-      safeProcess(NotFound, ctx)
-  }
+
   when(AboutToComplete) {
     case Event(Complete(completing), ctx@Context(async, url)) =>
       log.debug("About to complete async for '{}'", url)
@@ -86,27 +93,20 @@ class AsyncActor extends Actor with LoggingFSM[State, Data] {
       self ! Complete(Response(SC_INTERNAL_SERVER_ERROR, e.getMessage))
   }
 
-  def safeProcess(endpoint: Processing, async: Context): State = {
+  def safeProcess(endpoint: Processing, async: Context) {
     try self ! Complete(endpoint(async.context.getRequest))
     catch InternalErrorOnException(async.url)
-
-    //we want receive different messages before responding, for example 'Timeout'
-    goto(AboutToComplete) using async
   }
 
-  def safeProcess(actor: ActorRef, async: Context): State = {
+  def safeProcess(actor: ActorRef, async: Context) {
     try actor ! async.context.getRequest
     catch InternalErrorOnException(async.url)
-
-    //actor should respond with Complete(..) message
-    goto(AboutToComplete) using async
   }
 }
 
 
 object Async {
   sealed trait State
-  case object Idle extends State
   case object AboutToProcess extends State
   case object AboutToComplete extends State
 

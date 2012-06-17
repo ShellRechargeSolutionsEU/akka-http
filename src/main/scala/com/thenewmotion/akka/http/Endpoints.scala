@@ -1,8 +1,9 @@
 package com.thenewmotion.akka.http
 
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
-import akka.actor.{ActorRef, ActorLogging, Actor}
+import akka.actor.{ActorSystem, ActorRef, ActorLogging, Actor}
 import ext.Response
+import akka.agent.Agent
 
 /**
  * @author Yaroslav Klymko
@@ -24,11 +25,6 @@ object Endpoints {
 
   type Provider = PartialFunction[String, Endpoint]
 
-  case class Find(url: String)
-  case class Found(e: Endpoint)
-  case class Attach(name: String, p: Provider)
-  case class Detach(name: String)
-
   sealed abstract class Endpoint
   case class EndpointFunc(func: Processing) extends Endpoint
   case class EndpointActor(a: ActorRef) extends Endpoint
@@ -42,28 +38,25 @@ object Endpoints {
   implicit def func2Endpoint(func: Processing): Endpoint = Endpoint(func)
 }
 
-class EndpointsActor extends Actor with ActorLogging {
+trait EndpointFinder {
+  def find(url: String): Option[Endpoints.Endpoint]
+}
+
+class EndpointsAgent(system: ActorSystem)
+  extends Agent(Map[String, Endpoints.Provider](), system)
+  with EndpointFinder {
 
   import Endpoints._
-  val providers = collection.mutable.Map[String, Provider]()
 
-  protected def receive = {
-    case Attach(name, provider) =>
-      log.debug("Attaching provider '{}'", name)
-      providers += (name -> provider)
-    case Detach(name) =>
-      log.debug("Detaching provider '{}'", name)
-      providers -= name
-    case Find(url) =>
-      log.debug("Looking for endpoint for '{}'", url)
-      val endpoint: Endpoint = providers.toList.collectFirst {
-        case (name, provider) if provider.isDefinedAt(url) =>
-          log.debug("Endpoint '{}' found for '{}'", name, url)
-          provider(url)
-      } getOrElse {
-        log.debug("No endpoint found for '{}'", url)
-        NotFound
-      }
-      sender ! Found(endpoint)
+  def attach(name: String, p: Provider) {
+    send(_ + (name -> p))
+  }
+
+  def detach(name: String) {
+    send(_ - name)
+  }
+
+  def find(url: String) = get().values.collectFirst {
+    case provider if provider.isDefinedAt(url) => provider.apply(url)
   }
 }

@@ -8,8 +8,8 @@ import akka.actor.ActorSystem
  */
 abstract class StaticAkkaHttpServlet extends AkkaHttpServlet {
 
-  override def onSystemInit(system: ActorSystem) {
-    HttpExtension(system).endpoints ! Attach("static", providers)
+  override def onSystemInit(system: ActorSystem, endpoints: EndpointsAgent) {
+    endpoints.attach("static", providers)
   }
 
   def providers: Provider

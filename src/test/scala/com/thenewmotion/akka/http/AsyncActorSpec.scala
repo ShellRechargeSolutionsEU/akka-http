@@ -17,15 +17,11 @@ import akka.actor.{Actor, FSM, ActorSystem, Props}
  */
 class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
 
-  abstract class HttpContext extends TestKit(ActorSystem()) with Scope {
-
-    system.actorOf(Props(_ => {
-      case msg => testActor ! msg
-    }), "endpoints")
+  abstract class HttpContext() extends TestKit(ActorSystem()) with Scope {
 
     val asyncContext = AsyncContextMock()
 
-    val actorRef = TestFSMRef(new AsyncActor)
+    var actorRef: TestFSMRef[State, Data, AsyncActor] = null
 
     lazy val endpointActor = TestActorRef(new Actor {
       protected def receive = {
@@ -35,12 +31,19 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
 
     def asyncEventMessage(on: OnEvent) = AsyncEventMessage(new AsyncEvent(asyncContext, new Exception), on)
 
-    def start() = {
-      actorRef.stateName mustEqual Idle
+    def start(e: Endpoint) {
+      start(Some(e))
+    }
+
+    def start(e: Option[Endpoint] = None) {
+      val endpoints = new EndpointFinder {
+        def find(url: String) = e
+      }
+
+      actorRef = TestFSMRef(new AsyncActor(endpoints))
+      actorRef.stateName mustEqual AboutToProcess
       actorRef.stateData mustEqual Empty
       actorRef ! asyncContext
-      actorRef.stateName mustEqual AboutToProcess
-      actorRef.stateData mustEqual Context(asyncContext, "/test")
     }
 
     def res = asyncContext.getResponse.asInstanceOf[HttpServletResponse]
@@ -48,25 +51,14 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
 
   "AsyncActor" should {
     "look for defined endpoint for current request when started" >> new HttpContext {
-      start()
-      expectMsgType[Find]
-      actorRef ! Found(DummyProcessing)
+      start(DummyProcessing)
       there was one(asyncContext).complete()
       actorRef.isTerminated must beTrue
     }
     "pass processing scope to actor" >> new HttpContext {
-      start()
-      expectMsgType[Find]
-      actorRef ! Found(endpointActor)
+      start(endpointActor)
       there was one(asyncContext).complete()
       actorRef.isTerminated must beTrue
-    }
-    "when no endpoint received within 'endpoint-retrieval-timeout' respond with HTTP 404" >> new HttpContext {
-      start()
-      expectMsgType[Find]
-      actorRef ! FSM.StateTimeout
-      there was one(res).setStatus(HttpServletResponse.SC_NOT_FOUND)
-      there was one(asyncContext).complete()
     }
     "stop self on Error event" >> new HttpContext {
       start()
@@ -79,8 +71,6 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
       actorRef.isTerminated must beTrue
     }
     "stop self on Timeout event" >> new HttpContext {
-      start()
-
       var called = false
 
       def completion(res: HttpServletResponse): (Boolean => Unit) = {
@@ -88,15 +78,17 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
         DummyCallback
       }
 
-      expectMsgType[Find]
-      actorRef ! asyncEventMessage(OnTimeout)
-      actorRef ! Found(Endpoint(_ => completion))
+      def processing(req: HttpServletRequest): Completing = {
+        actorRef ! asyncEventMessage(OnTimeout)
+        completion
+      }
+
+      start(processing _)
+
       actorRef.isTerminated must beTrue
       called must beFalse
     }
     "response if async not completed" >> new HttpContext {
-      start()
-
       var called = false
 
       def completion(res: HttpServletResponse): (Boolean => Unit) = {
@@ -104,14 +96,11 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
         DummyCallback
       }
 
-      expectMsgType[Find]
-      actorRef ! Found(Endpoint(_ => completion))
+      start(Endpoint(_ => completion))
       there was one(asyncContext).complete()
       called must beTrue
     }
     "not response if async already completed" >> new HttpContext {
-      start()
-
       var called = false
 
       def completion(res: HttpServletResponse): (Boolean => Unit) = {
@@ -124,53 +113,41 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
         completion
       }
 
-      expectMsgType[Find]
-      actorRef ! Found(func _ )
-
+      start(func _)
       there was no(asyncContext).complete()
       called must beFalse
     }
-    "response with 'Status Code 500' when exception while processing request" >> new HttpContext {
+    "response with 404 when no endpoint found" >> new HttpContext {
       start()
-
+      there was one(res).setStatus(HttpServletResponse.SC_NOT_FOUND)
+    }
+    "response with 'Status Code 500' when exception while processing request" >> new HttpContext {
       def func(req: HttpServletRequest): (HttpServletResponse => Boolean => Unit) = {
         throw new Exception
       }
 
-      expectMsgType[Find]
-      actorRef ! Found(func _)
-
+      start(func _)
       there was one(res).setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
       there was one(asyncContext).complete()
     }
     "response with 'Status Code 500' when exception while responding" >> new HttpContext {
-      start()
-
       val responseException = (res: HttpServletResponse) => throw new Exception
 
-      expectMsgType[Find]
-      actorRef ! Found(Endpoint(_ => responseException))
+      start(Endpoint(_ => responseException))
 
       there was one(res).sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, null)
       there was one(asyncContext).complete()
     }
     "pass to enpoint true if completed successfully" >> new HttpContext {
-      start()
-
-      expectMsgType[Find]
       var result = false
-      actorRef ! Found(Endpoint(_ => _ => result = _))
-
+      start(Endpoint(_ => _ => result = _))
       there was one(asyncContext).complete()
       result must beTrue
     }
     "pass to endpoint false if not completed successfully" >> new HttpContext {
-      start()
-
-      expectMsgType[Find]
       asyncContext.complete() throws (new RuntimeException)
       var result = true
-      actorRef ! Found(Endpoint(_ => _ => result = _))
+      start(Endpoint(_ => _ => result = _))
 
       there was one(asyncContext).complete()
       result must beFalse

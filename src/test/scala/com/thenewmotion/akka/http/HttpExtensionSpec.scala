@@ -13,8 +13,6 @@ class HttpExtensionSpec extends SpecificationWithJUnit {
       val extension = HttpExtension(ActorSystem())
       import extension._
       AsyncTimeout mustEqual 1000L
-      EndpointsName mustEqual "endpoints"
-      EndpointRetrievalTimeout mustEqual 100L
       ExpiredHeader mustEqual "Async-Timeout" -> "expired"
       LogConfigOnInit must beFalse
     }

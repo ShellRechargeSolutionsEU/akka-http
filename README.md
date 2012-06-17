@@ -116,18 +116,14 @@ However some of the properties were removed from mist at all, same happened with
 Most of the properties you can retrieve from `HttpExtension.scala`.
 [Extension](http://doc.akka.io/docs/akka/2.0/scala/extending-akka.html) mechanism is new, added in Akka 2.0
 
-### Changed properties: ###
-
-* `root-actor-id = "_httproot"` to `endpoints-actor-name = endpoints` - path of the actor to use for receiving and adding endpoints, call 'actorFor(/user/endpoints)'
-
 ### Added properties: ###
 
 * `system-name = http` - name of the system used in servlet
-* `endpoint-retrieval-timeout = 500` - HTTP 404 if no endpoint retrieved within defined timeout (ms), should be less then timeout
 * `log-http-config-on-init = off` - Log akka.http configuration at INFO level on Servlet/Filter init.
 
 ### Removed properties: ###
 
+* `root-actor-id = "_httproot"`
 * `hostname = "localhost"`
 * `port = 9998`
 * `filters = ["akka.security.AkkaSecurityFilterFactory"]`

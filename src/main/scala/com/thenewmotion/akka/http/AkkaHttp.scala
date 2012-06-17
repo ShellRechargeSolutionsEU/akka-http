@@ -9,20 +9,20 @@ import com.typesafe.config.ConfigFactory
  */
 trait AkkaHttp {
 
-  private[http] var actorSystem: Option[ActorSystem] = None
+  private[http] var _httpSystem: Option[(ActorSystem, EndpointsAgent)] = None
 
   private[http] def initAkkaSystem() {
     val system = newHttpSystem()
-    actorSystem = Some(system)
-    system.actorOf(Props[EndpointsActor], HttpExtension(system).EndpointsName)
-    onSystemInit(system)
+    val endpoints = new EndpointsAgent(system)
+    _httpSystem = Some(system -> endpoints)
+    onSystemInit(system, endpoints)
     system.log.info("Akka Http System '{}' created", system)
     logConfigOnInit()
   }
 
   protected[http] def logConfigOnInit() {
-    actorSystem.foreach {
-      system =>
+    _httpSystem.foreach {
+      case (system, _) =>
         val ext = HttpExtension(system)
         if (ext.LogConfigOnInit) ext.logConfiguration()
     }
@@ -34,21 +34,21 @@ trait AkkaHttp {
   }
 
   private[http] def destroyAkkaSystem() {
-    actorSystem.foreach {
-      system =>
-        onSystemDestroy(system)
+    _httpSystem.foreach {
+      case (system, endpoints) =>
+        onSystemDestroy(system, endpoints)
+        endpoints.close()
         system.shutdown()
     }
-    actorSystem = None
+    _httpSystem = None
   }
 
-  def onSystemInit(system: ActorSystem) {}
-  def onSystemDestroy(system: ActorSystem) {}
-
+  def onSystemInit(system: ActorSystem, endpoints: EndpointsAgent) {}
+  def onSystemDestroy(system: ActorSystem, endpoints: EndpointsAgent) {}
 
   private[http] def doActor(req: HttpServletRequest, res: HttpServletResponse) {
-    val system = actorSystem.get
-    val props = Props[AsyncActor].withDispatcher("akka.http.actor.dispatcher")
+    val (system, endpoints) = _httpSystem.get
+    val props = Props(new AsyncActor(endpoints)).withDispatcher("akka.http.actor.dispatcher")
     val actor = system.actorOf(props)
 
     val asyncContext = req.startAsync()
