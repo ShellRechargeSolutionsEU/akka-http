@@ -3,6 +3,8 @@ package com.thenewmotion.akka.http
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
 import akka.actor.{Props, ActorSystem}
 import com.typesafe.config.ConfigFactory
+import com.thenewmotion.akka.http.Endpoints._
+import scala.Some
 
 /**
  * @author Yaroslav Klymko
@@ -57,4 +59,14 @@ trait AkkaHttp {
 
     actor ! asyncContext
   }
+}
+
+trait StaticEndpoints {
+  self: AkkaHttp =>
+
+  override def onSystemInit(system: ActorSystem, endpoints: EndpointsAgent) {
+    endpoints.attach("static", providers)
+  }
+
+  def providers: Provider
 }
