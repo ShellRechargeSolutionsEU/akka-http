@@ -1,6 +1,7 @@
 package com.thenewmotion.akka.http
 
 import javax.servlet.http.HttpServletResponse
+import java.nio.charset.Charset
 
 /**
  * @author Yaroslav Klymko
@@ -21,6 +22,7 @@ object FutureResponse {
 
   def apply(statusCode: Int, msg: String, headers: (String, String)*): FutureResponse = apply {
     res =>
+      res.setCharacterEncoding(Charset.defaultCharset().toString)
       headers.foreach {
         case (name, value) => res.setHeader(name, value)
       }
@@ -33,6 +35,7 @@ object FutureResponse {
 
   def error(statusCode: Int, headers: (String, String)*): FutureResponse = apply {
     res =>
+      res.setCharacterEncoding(Charset.defaultCharset().toString)
       headers.foreach {
         case (name, value) => res.setHeader(name, value)
       }
