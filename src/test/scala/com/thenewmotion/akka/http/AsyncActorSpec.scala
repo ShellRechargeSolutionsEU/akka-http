@@ -9,7 +9,7 @@ import Listener._
 import Async._
 import Endpoints._
 import akka.testkit.{TestActorRef, TestFSMRef, TestKit}
-import akka.actor.{Actor, FSM, ActorSystem, Props}
+import akka.actor.{Actor, ActorSystem}
 
 
 /**
