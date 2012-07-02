@@ -77,16 +77,16 @@ class AsyncActor(val endpoints: EndpointFinder) extends Actor with LoggingFSM[St
       stop()
   }
 
+  import Listener._
   whenUnhandled {
-    case Event(Listener.AsyncEventMessage(event, on), Context(_, url)) =>
-      import Listener._
-      on match {
-        case OnStartAsync => stay()
-        case OnTimeout | OnComplete => stop()
-        case OnError =>
-          log.error(event.getThrowable, "Error while processing async for '{}'", url)
-          stop()
-      }
+    case Event(AsyncEventMessage(_, OnStartAsync), _) => stay()
+    case Event(AsyncEventMessage(_, OnTimeout), _) => stop()
+    case Event(AsyncEventMessage(_, OnComplete), _) => stop()
+    case Event(AsyncEventMessage(event, OnError), Context(_, url)) =>
+      val e = event.getThrowable
+      log.error(e, "{} while processing async for '{}': {} ", e.getClass.getSimpleName, url, e.getMessage)
+      stop()
+    case Event(AsyncEventMessage(_, OnError), _) => stop()
   }
 
   initialize
