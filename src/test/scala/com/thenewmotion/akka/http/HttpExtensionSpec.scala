@@ -14,6 +14,7 @@ class HttpExtensionSpec extends SpecificationWithJUnit {
       import extension._
       AsyncTimeout mustEqual 1000L
       ExpiredHeader mustEqual "Async-Timeout" -> "expired"
+      SupervisorPath mustEqual "async"
       LogConfigOnInit must beFalse
     }
   }

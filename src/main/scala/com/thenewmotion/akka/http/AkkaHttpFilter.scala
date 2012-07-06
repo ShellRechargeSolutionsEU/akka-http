@@ -19,14 +19,13 @@ class AkkaHttpFilter extends Filter with AkkaHttp {
 
 
   def doFilter(request: ServletRequest, response: ServletResponse, chain: FilterChain) {
-    def toChain() {
-      chain.doFilter(request, response)
-    }
+    def _chain() { chain.doFilter(request, response) }
+
     (request, response) match {
       case (req: HttpServletRequest, res: HttpServletResponse) =>
         doActor(req, res)
-        toChain()
-      case _ => toChain()
+        _chain()
+      case _ => _chain()
     }
   }
 }

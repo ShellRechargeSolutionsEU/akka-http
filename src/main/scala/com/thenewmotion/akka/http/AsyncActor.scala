@@ -2,7 +2,7 @@ package com.thenewmotion.akka.http
 
 
 import akka.actor._
-import akka.util.duration._
+import SupervisorStrategy.Stop
 import Endpoints._
 import Async._
 import javax.servlet.{ServletRequest, ServletResponse, AsyncContext}
@@ -22,6 +22,8 @@ class AsyncActor(val endpoints: EndpointFinder) extends Actor with LoggingFSM[St
 
   when(AboutToProcess) {
     case Event(async: AsyncContext, Empty) =>
+      async.addListener(new Listener(self, context.system))
+
       val url = async.getRequest.getPathInfo
       log.debug("About to process async for '{}'", url)
 
@@ -36,7 +38,7 @@ class AsyncActor(val endpoints: EndpointFinder) extends Actor with LoggingFSM[St
 
       endpoint match {
         case EndpointFunc(func) =>
-          log.debug("RequestResponse$ async for '{}'", url)
+          log.debug("Processing async for '{}'", url)
           safeProcess(func, ctx)
         case EndpointActor(actor) =>
           log.debug("Passing async processing scope to endpoint actor for '{}'", url)
@@ -58,7 +60,7 @@ class AsyncActor(val endpoints: EndpointFinder) extends Actor with LoggingFSM[St
         }
       }
 
-      val res = async.getResponse
+      val res = async.getResponse //TODO
       val safeRespond = tryo(future(res)) {
         e =>
           log.error(e, "{} while responding for '{}': {}", e.getClass.getSimpleName, url, e.getMessage)
@@ -80,13 +82,7 @@ class AsyncActor(val endpoints: EndpointFinder) extends Actor with LoggingFSM[St
   import Listener._
   whenUnhandled {
     case Event(AsyncEventMessage(_, OnStartAsync), _) => stay()
-    case Event(AsyncEventMessage(_, OnTimeout), _) => stop()
-    case Event(AsyncEventMessage(_, OnComplete), _) => stop()
-    case Event(AsyncEventMessage(event, OnError), Context(_, url)) =>
-      val e = event.getThrowable
-      log.error(e, "{} while processing async for '{}': {} ", e.getClass.getSimpleName, url, e.getMessage)
-      stop()
-    case Event(AsyncEventMessage(_, OnError), _) => stop()
+    case Event(AsyncEventMessage(_, _: OnEndAsync), _) => stop()
   }
 
   initialize

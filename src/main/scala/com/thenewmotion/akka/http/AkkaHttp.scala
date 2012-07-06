@@ -16,6 +16,9 @@ trait AkkaHttp {
   private[http] def initAkkaSystem() {
     val system = newHttpSystem()
     val endpoints = new EndpointsAgent(system)
+    val supervisor = Props(new AsyncSupervisor(endpoints))
+    system.actorOf(supervisor, HttpExtension(system).SupervisorPath)
+
     _httpSystem = Some(system -> endpoints)
     onSystemInit(system, endpoints)
     system.log.info("Akka Http System '{}' created", system)
@@ -49,15 +52,13 @@ trait AkkaHttp {
   def onSystemDestroy(system: ActorSystem, endpoints: EndpointsAgent) {}
 
   private[http] def doActor(req: HttpServletRequest, res: HttpServletResponse) {
-    val (system, endpoints) = _httpSystem.get
-    val props = Props(new AsyncActor(endpoints)).withDispatcher("akka.http.actor.dispatcher")
-    val actor = system.actorOf(props)
-
-    val asyncContext = req.startAsync()
-    asyncContext.setTimeout(HttpExtension(system).AsyncTimeout)
-    asyncContext.addListener(new Listener(actor, system))
-
-    actor ! asyncContext
+    _httpSystem.foreach {
+      case (system, _) =>
+        val asyncContext = req.startAsync()
+        val extension = HttpExtension(system)
+        asyncContext.setTimeout(extension.AsyncTimeout)
+        extension.supervisor ! asyncContext
+    }
   }
 }
 

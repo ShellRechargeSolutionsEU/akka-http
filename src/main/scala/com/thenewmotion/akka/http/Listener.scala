@@ -40,10 +40,11 @@ class Listener(actor: ActorRef, system: ActorSystem) extends AsyncListener {
 
 object Listener {
   abstract sealed class OnEvent
-  case object OnComplete extends OnEvent
-  case object OnError extends OnEvent
   case object OnStartAsync extends OnEvent
-  case object OnTimeout extends OnEvent
+  abstract sealed class OnEndAsync extends OnEvent
+  case object OnError extends OnEndAsync
+  case object OnComplete extends OnEndAsync
+  case object OnTimeout extends OnEndAsync
 
   case class AsyncEventMessage(event: AsyncEvent, on: OnEvent)
 }

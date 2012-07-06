@@ -11,6 +11,9 @@ class HttpExtension(val system: ActorSystem) extends Extension {
   val LogConfigOnInit = http.getBoolean("log-http-config-on-init")
   val ExpiredHeader: (String, String) =
     http.getString("expired-header-name") -> http.getString("expired-header-value")
+  val SupervisorPath = http.getString("supervisor-path")
+
+  def supervisor = system.actorFor("/user/" + SupervisorPath)
 
   def logConfiguration() {
     system.log.info(http.root().render())
@@ -19,5 +22,6 @@ class HttpExtension(val system: ActorSystem) extends Extension {
 
 object HttpExtension extends ExtensionId[HttpExtension] with ExtensionIdProvider {
   def lookup() = HttpExtension
+
   def createExtension(system: ExtendedActorSystem) = new HttpExtension(system)
 }
