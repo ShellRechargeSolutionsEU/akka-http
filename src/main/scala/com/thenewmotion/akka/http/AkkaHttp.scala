@@ -44,6 +44,7 @@ trait AkkaHttp {
         onSystemDestroy(system, endpoints)
         endpoints.close()
         system.shutdown()
+        system.awaitTermination()
     }
     _httpSystem = None
   }
