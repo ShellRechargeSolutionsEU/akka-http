@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
-        <groupId>com.thenewmotion</groupId>
-        <artifactId>parent</artifactId>
-        <version>1.6</version>
+        <groupId>ua.t3hnar</groupId>
+        <artifactId>scala-parent-pom</artifactId>
+        <version>1.1</version>
     </parent>
 
     <licenses>
@@ -21,7 +23,6 @@
     <url>https://github.com/thenewmotion/akka-http</url>
 
     <properties>
-        <scala.version>2.9.2</scala.version>
         <akka.version>2.0.2</akka.version>
         <tomcat.version>7.0.27</tomcat.version>
     </properties>
@@ -34,18 +35,6 @@
     </developers>
 
     <dependencies>
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-            <version>${scala.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-compiler</artifactId>
-            <version>${scala.version}</version>
-            <scope>provided</scope>
-        </dependency>
-
         <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-actor</artifactId>
@@ -71,34 +60,17 @@
         </dependency>
 
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.10</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.specs2</groupId>
-            <artifactId>specs2_${scala.version}</artifactId>
-            <version>1.10</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-all</artifactId>
-            <version>1.9.0</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 
 
     <repositories>
         <repository>
-            <id>typesafe</id>
-            <url>http://repo.typesafe.com/typesafe/releases/</url>
-        </repository>
-        <repository>
-            <id>thenewmotion-nexus</id>
-            <url>http://nexus.thenewmotion.com/content/groups/public/</url>
+            <id>thenewmotion</id>
+            <name>The New Motion Repository</name>
+            <url>http://nexus.thenewmotion.com/content/groups/public</url>
         </repository>
     </repositories>
 
@@ -109,51 +81,10 @@
     </scm>
 
     <build>
-        <resources>
-            <resource>
-                <directory>src/main/scala</directory>
-            </resource>
-            <resource>
-                <directory>src/main/resources</directory>
-            </resource>
-        </resources>
         <plugins>
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
-                <version>3.0.2</version>
-                <configuration>
-                    <scalaVersion>${scala.version}</scalaVersion>
-                    <args>
-                        <arg>-unchecked</arg>
-                        <arg>-deprecation</arg>
-                        <arg>-explaintypes</arg>
-                    </args>
-                    <jvmArgs>
-                        <jvmArg>-Xmx512m</jvmArg>
-                        <jvmArg>-server</jvmArg>
-                        <jvmArg>-Xss1m</jvmArg>
-                        <jvmArg>-XX:+TieredCompilation</jvmArg>
-                    </jvmArgs>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>compile</goal>
-                            <goal>testCompile</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.12</version>
-                <configuration>
-                    <includes>
-                        <include>**/*Spec.class</include>
-                    </includes>
-                </configuration>
             </plugin>
         </plugins>
     </build>
