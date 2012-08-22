@@ -1,5 +1,4 @@
-Overview
-========
+# Akka Http   [![Build Status](https://secure.travis-ci.org/thenewmotion/akka-http.png)](http://travis-ci.org/thenewmotion/akka-http)
 
 Akka Http is not a webframework. It's an Akka based implementation of asynchronous requests available since servlet 3.0
 Each request will have own actor. Actor will live until async request is processed and completed or time is out.
@@ -7,16 +6,13 @@ Processing of async request is divided by different unit of work. All these work
 Actor may receive one of the javax.servlet.AsyncEvent between. In case of Error, Timeout or Complete events actor will stop processing and shutdown.
 So all work units left will be dropped.
 
-Examples
-========
+# Examples
 
 [HelloWorldServlet example](https://github.com/thenewmotion/akka-http-helloworld)
 
-What's new
-==========
+# What's new
 
-Scopes
-------
+## Scopes
 
 Async context has been divided on different scopes. Each scope is a synchronous unit of work
 
@@ -28,11 +24,10 @@ We need scope to receive async event messages in between. Thus will allow us to 
 For example you may get `response time out exception` or `response already completed`, etc.
 Also you can avoid odd operations when requrest has expired.
 
-Migration Guide
-===============
+# Migration Guide
 
-RequestMethod
--------------
+
+## RequestMethod
 
 RequestMethod was removed. However you are able to use HttpServletRequest/Response directly.
 
@@ -82,23 +77,19 @@ RequestMethod was removed. However you are able to use HttpServletRequest/Respon
 ```
 
 
-Endpoints
----------
+## Endpoints
 
 We are not using Endpoint hierarchy from akka-mist. We have single `EndpointsAgent(akka.agent)` instead where you can find/attach/detach endpoint in the runtime.
 
-MistSettings
-------------
+## MistSettings
 
 MistSettings were moved to HttpExtension with other common stuff. Http properties will be defined per ActorSystem.
 
-AkkaMistServlet/AkkaMistFilter
-------------------------------
+## AkkaMistServlet/AkkaMistFilter
 
 AkkaMistServlet was renamed to AkkaHttpServlet, AkkaMistFilter to AkkaHttpFilter. Both of them extend trait AkkaHttp
 
-Configuration
--------------
+## Configuration
 
 From [Akka Migration Guide](http://doc.akka.io/docs/akka/2.0/project/migration-guide-1.3.x-2.0.x.html#Configuration)
 
