@@ -24,7 +24,7 @@ class AsyncActor(val endpoints: EndpointFinder) extends Actor with LoggingFSM[St
     case Event(async: AsyncContext, Empty) =>
       async.addListener(new Listener(self, context.system))
 
-      val url = async.getRequest.getPathInfo
+      val url = async.getRequest.getRequestURI
       log.debug("About to process async for '{}'", url)
 
       val endpoint: Endpoint = endpoints.find(url) match {
