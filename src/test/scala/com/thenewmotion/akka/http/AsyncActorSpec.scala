@@ -24,7 +24,7 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
     var actorRef: TestFSMRef[State, Data, AsyncActor] = null
 
     lazy val endpointActor = TestActorRef(new Actor {
-      protected def receive = {
+      def receive = {
         case req: HttpServletRequest => sender ! Complete(FutureResponse{_ => })
       }
     })

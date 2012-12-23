@@ -13,7 +13,7 @@ class AsyncSupervisor(val endpoints: EndpointFinder) extends Actor {
     case _: Exception => Stop
   }
 
-  protected def receive = {
+  def receive = {
     case async: AsyncContext =>
       val props = Props(new AsyncActor(endpoints)).withDispatcher("akka.http.actor.dispatcher")
       val actor = context.actorOf(props)

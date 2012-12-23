@@ -1,5 +1,16 @@
 # Akka Http   [![Build Status](https://secure.travis-ci.org/thenewmotion/akka-http.png)](http://travis-ci.org/thenewmotion/akka-http)
 
+<table border="0">
+  <tr>
+    <td>Scala version: </td>
+    <td>2.10.0</td>
+  </tr>
+  <tr>
+    <td>Akka version: </td>
+    <td>2.1.0</td>
+  </tr>
+</table>
+
 Akka Http is not a webframework. It's an Akka based implementation of asynchronous requests available since servlet 3.0
 Each request will have own actor. Actor will live until async request is processed and completed or time is out.
 Processing of async request is divided by different unit of work. All these work units will be processed one by one, however
@@ -135,7 +146,7 @@ Most of the properties you can retrieve from `HttpExtension.scala`.
 ```xml
     <dependency>
         <groupId>com.thenewmotion.akka</groupId>
-        <artifactId>akka-http</artifactId>
-        <version>0.0.7</version>
+        <artifactId>akka-http_2.10</artifactId>
+        <version>1.0.0</version>
     </dependency>
 ```
