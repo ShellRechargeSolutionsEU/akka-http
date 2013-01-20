@@ -27,7 +27,7 @@ So all work units left will be dropped.
 
 Async context has been divided on different scopes. Each scope is a synchronous unit of work
 
-* Request scope. Expected to be the heaviest scope. All request related logic shhould go here
+* Request scope. Expected to be the heaviest scope. All request related logic should go here
 
 * Response scope. Light scope for putting request result in response
 
