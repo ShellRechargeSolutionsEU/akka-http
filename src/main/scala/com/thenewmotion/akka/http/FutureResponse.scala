@@ -15,6 +15,16 @@ trait FutureResponse extends (HttpServletResponse => Unit) {
 
 object FutureResponse {
 
+  val ok = new FutureResponse {
+    def apply(res: HttpServletResponse) {
+      res.setStatus(HttpServletResponse.SC_OK)
+      res.flushBuffer()
+    }
+
+    def onComplete = PartialFunction.empty
+  }
+
+
   def apply(func: HttpServletResponse => Unit): FutureResponse = new FutureResponse {
     def apply(res: HttpServletResponse) { func(res) }
     def onComplete = { case _ => }
