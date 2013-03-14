@@ -8,6 +8,8 @@ import Async._
 import javax.servlet.{ServletRequest, ServletResponse, AsyncContext}
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
 import HttpServletResponse.SC_INTERNAL_SERVER_ERROR
+import org.apache.catalina.connector.ClientAbortException
+import java.io.IOException
 
 
 /**
@@ -56,19 +58,23 @@ class AsyncActor(val endpoints: EndpointFinder) extends Actor with LoggingFSM[St
         try {
           func; None
         } catch {
+          case e: IOException => Some(e)
           case e: Exception => onException(e); Some(e)
         }
       }
 
-      val res = async.getResponse //TODO
+      val res = async.getResponse
       val safeRespond = tryo(future(res)) {
         e =>
-          log.error(e, "{} while responding for '{}': {}", e.getClass.getSimpleName, url, e.getMessage)
+          if (log.isDebugEnabled) log.error(e, "{} while responding for '{}': {}", e.getClass.getSimpleName, url, e.getMessage)
+          else log.error("{} while responding for '{}': {}", e.getClass.getSimpleName, url, e.getMessage)
           res.sendError(SC_INTERNAL_SERVER_ERROR, e.getMessage)
       }
 
       val safeComplete = tryo(async.complete()) {
-        e => log.error(e, "{} while completing async for '{}': {} ", e.getClass.getSimpleName, url, e.getMessage)
+        e =>
+          if (log.isDebugEnabled) log.error(e, "{} while completing async for '{}': {} ", e.getClass.getSimpleName, url, e.getMessage)
+          log.error("{} while completing async for '{}': {} ", e.getClass.getSimpleName, url, e.getMessage)
       }
 
       future.onComplete.lift(safeRespond match {
