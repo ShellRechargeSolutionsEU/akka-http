@@ -2,13 +2,11 @@ package com.thenewmotion.akka.http
 
 
 import akka.actor._
-import SupervisorStrategy.Stop
 import Endpoints._
 import Async._
 import javax.servlet.{ServletRequest, ServletResponse, AsyncContext}
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
 import HttpServletResponse.SC_INTERNAL_SERVER_ERROR
-import org.apache.catalina.connector.ClientAbortException
 import java.io.IOException
 
 
