@@ -22,8 +22,8 @@
     </licenses>
 
     <properties>
-        <akka.version>2.0.2</akka.version>
-        <tomcat.version>7.0.16</tomcat.version>
+        <akka.version>2.0.5</akka.version>
+        <tomcat.version>7.0.37</tomcat.version>
     </properties>
 
     <developers>
