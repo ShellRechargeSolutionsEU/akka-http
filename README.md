@@ -135,7 +135,7 @@ Most of the properties you can retrieve from `HttpExtension.scala`.
 ```xml
     <dependency>
         <groupId>com.thenewmotion.akka</groupId>
-        <artifactId>akka-http</artifactId>
-        <version>0.0.7</version>
+        <artifactId>akka-http_2.9.2</artifactId>
+        <version>0.0.9</version>
     </dependency>
 ```
