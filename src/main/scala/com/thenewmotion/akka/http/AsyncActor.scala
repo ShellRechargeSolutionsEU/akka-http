@@ -86,6 +86,11 @@ class AsyncActor(val endpoints: EndpointFinder) extends Actor with LoggingFSM[St
   import Listener._
   whenUnhandled {
     case Event(AsyncEventMessage(_, OnStartAsync), _) => stay()
+    case Event(AsyncEventMessage(event, OnTimeout), _) => {
+      val url = event.getAsyncContext.getRequest.getRequestURI
+      log.error("Asynchronous processing timed out for '{}'", url)
+      stop()
+    }
     case Event(AsyncEventMessage(_, _: OnEndAsync), _) => stop()
   }
 
