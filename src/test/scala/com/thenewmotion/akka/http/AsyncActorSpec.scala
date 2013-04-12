@@ -55,21 +55,25 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
       there was one(asyncContext).complete()
       actorRef.isTerminated must beTrue
     }
+
     "pass processing scope to actor" >> new HttpContext {
       start(endpointActor)
       there was one(asyncContext).complete()
       actorRef.isTerminated must beTrue
     }
+
     "stop self on Error event" >> new HttpContext {
       start()
       actorRef ! asyncEventMessage(OnError)
       actorRef.isTerminated must beTrue
     }
+
     "stop self on Complete event" >> new HttpContext {
       start()
       actorRef ! asyncEventMessage(OnComplete)
       actorRef.isTerminated must beTrue
     }
+
     "stop self on Timeout event" >> new HttpContext {
       var called = false
 
@@ -84,13 +88,15 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
       actorRef.isTerminated must beTrue
       called must beFalse
     }
-    "response if async not completed" >> new HttpContext {
+
+    "respond if async not completed" >> new HttpContext {
       var called = false
       start(Endpoint(_ => FutureResponse(_ => called = true)))
       there was one(asyncContext).complete()
       called must beTrue
     }
-    "not response if async already completed" >> new HttpContext {
+
+    "not respond if async already completed" >> new HttpContext {
       var called = false
 
       def func(req: HttpServletRequest) = {
@@ -104,22 +110,26 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
       there was no(asyncContext).complete()
       called must beFalse
     }
-    "response with 404 when no endpoint found" >> new HttpContext {
+
+    "respond with 404 when no endpoint found" >> new HttpContext {
       start()
       there was one(res).setStatus(HttpServletResponse.SC_NOT_FOUND)
     }
-    "response with 'Status Code 500' when exception while processing request" >> new HttpContext {
+
+    "respond with 'Status Code 500' when exception while processing request" >> new HttpContext {
       start(RequestResponse(req => throw new Exception))
       there was one(res).setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
       there was one(asyncContext).complete()
     }
-    "response with 'Status Code 500' when exception while responding" >> new HttpContext {
+
+    "respond with 'Status Code 500' when exception while responding" >> new HttpContext {
       start(RequestResponse(FutureResponse {
         res => throw new Exception
       }))
       there was one(res).sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, null)
       there was one(asyncContext).complete()
     }
+
     "call `onComplete` with None if completed successfully" >> new HttpContext {
       var result = false
       val future = new FutureResponse {
@@ -133,6 +143,7 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
       there was one(asyncContext).complete()
       result must beTrue
     }
+
     "call `onComplete` with Some(Exception) if completed unsuccessfully" >> new HttpContext {
       asyncContext.complete() throws (new RuntimeException)
 
