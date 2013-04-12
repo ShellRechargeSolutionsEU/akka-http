@@ -5,7 +5,7 @@
     <parent>
         <groupId>ua.t3hnar</groupId>
         <artifactId>scala-parent-pom_2.10</artifactId>
-        <version>2.0</version>
+        <version>2.1</version>
     </parent>
 
     <groupId>com.thenewmotion.akka</groupId>
@@ -22,8 +22,8 @@
     </licenses>
 
     <properties>
-        <akka.version>2.1.1</akka.version>
-        <tomcat.version>7.0.34</tomcat.version>
+        <akka.version>2.1.2</akka.version>
+        <tomcat.version>7.0.39</tomcat.version>
     </properties>
 
     <developers>
