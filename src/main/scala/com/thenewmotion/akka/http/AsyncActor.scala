@@ -7,109 +7,95 @@ import Async._
 import javax.servlet.{ServletRequest, ServletResponse, AsyncContext}
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
 import HttpServletResponse.SC_INTERNAL_SERVER_ERROR
-import java.io.IOException
+import scala.util.{Failure, Success, Try}
 
 
 /**
  * @author Yaroslav Klymko
  */
-class AsyncActor(val endpoints: EndpointFinder) extends Actor with LoggingFSM[State, Data] {
+class AsyncActor(val provider: Provider, uri: String) extends Actor with LoggingFSM[State, Data] {
+  import Listener._
 
   implicit def res2HttpRes(res: ServletResponse) = res.asInstanceOf[HttpServletResponse]
   implicit def req2HttpReq(req: ServletRequest) = req.asInstanceOf[HttpServletRequest]
 
-  startWith(AboutToProcess, Empty)
+  startWith(AboutToProcess, NoData)
 
   when(AboutToProcess) {
-    case Event(async: AsyncContext, Empty) =>
-      async.addListener(new Listener(self, context.system))
+    case Event(async: AsyncContext, NoData) =>
+      debug("about to process async")
+      Try(async.getRequest) match {
+        case Failure(e) =>
+          error(e)
+          stop()
+        case Success(request) =>
+          val endpoint: Endpoint = provider.lift(uri) match {
+            case Some(e) => e
+            case None =>
+              debug("no endpoint found")
+              NotFound
+          }
 
-      val url = async.getRequest.getRequestURI
-      log.debug("About to process async for '{}'", url)
+          endpoint match {
+            case EndpointFunc(func) =>
+              debug("processing async")
+              Try(func(request)) match {
+                case Success(future) => self ! Complete(future)
+                case Failure(e) =>
+                  error(e)
+                  Try {
+                    async.getResponse.sendError(SC_INTERNAL_SERVER_ERROR)
+                    async.complete()
+                  }
+              }
 
-      val endpoint: Endpoint = endpoints.find(url) match {
-        case Some(e) => e
-        case None =>
-          log.debug("No endpoint found for '{}'", url)
-          NotFound
+              self ! Complete(func(request))
+            case EndpointActor(actor) =>
+              debug("passing async scope to endpoint actor")
+              actor ! request
+          }
+
+          goto(AboutToComplete) using AsyncData(async)
       }
-
-      val ctx = Context(async, url)
-
-      endpoint match {
-        case EndpointFunc(func) =>
-          log.debug("Processing async for '{}'", url)
-          safeProcess(func, ctx)
-        case EndpointActor(actor) =>
-          log.debug("Passing async processing scope to endpoint actor for '{}'", url)
-          safeProcess(actor, ctx)
-      }
-
-      goto(AboutToComplete) using ctx
   }
-
   when(AboutToComplete) {
-    case Event(Complete(future), ctx@Context(async, url)) =>
-      log.debug("About to complete async for '{}'", url)
+    case Event(Complete(future), AsyncData(async)) =>
+      debug("about to complete async")
 
-      def tryo(func: => Unit)(onException: Exception => Unit): Option[Throwable] = {
-        try {
-          func; None
-        } catch {
-          case e: IOException => Some(e)
-          case e: Exception => onException(e); Some(e)
-        }
+      def onComplete = future.onComplete.lift.apply _
+
+      Try(async.getResponse) match {
+        case Failure(e) =>
+          error(e)
+          onComplete(Some(e))
+        case Success(response) =>
+          Try(future(response)) match {
+            case Success(_) => onComplete(None)
+            case Failure(e) =>
+              onComplete(Some(e))
+              error(e)
+              Try(response.sendError(SC_INTERNAL_SERVER_ERROR))
+          }
       }
-
-      val res = async.getResponse
-      val safeRespond = tryo(future(res)) {
-        e =>
-          if (log.isDebugEnabled) log.error(e, "{} while responding for '{}': {}", e.getClass.getSimpleName, url, e.getMessage)
-          else log.error("{} while responding for '{}': {}", e.getClass.getSimpleName, url, e.getMessage)
-          res.sendError(SC_INTERNAL_SERVER_ERROR, e.getMessage)
-      }
-
-      val safeComplete = tryo(async.complete()) {
-        e =>
-          if (log.isDebugEnabled) log.error(e, "{} while completing async for '{}': {} ", e.getClass.getSimpleName, url, e.getMessage)
-          log.error("{} while completing async for '{}': {} ", e.getClass.getSimpleName, url, e.getMessage)
-      }
-
-      future.onComplete.lift(safeRespond match {
-        case None => safeComplete
-        case some => some
-      })
-
+      Try(async.complete())
       stop()
   }
-
-  import Listener._
   whenUnhandled {
     case Event(AsyncEventMessage(_, OnStartAsync), _) => stay()
-    case Event(AsyncEventMessage(event, OnTimeout), _) => {
-      val url = event.getAsyncContext.getRequest.getRequestURI
-      log.error("Asynchronous processing timed out for '{}'", url)
+    case Event(AsyncEventMessage(event, OnTimeout), _) =>
+      log.error("[{}] asynchronous processing timed out", uri)
       stop()
-    }
     case Event(AsyncEventMessage(_, _: OnEndAsync), _) => stop()
   }
-
   initialize
 
-  def InternalErrorOnException(url: String): PartialFunction[Throwable, Unit] = {
-    case e: Exception =>
-      log.error(e, "{} while serving request for '{}': {}", e.getClass.getSimpleName, url, e.getMessage)
-      self ! Complete(FutureResponse(SC_INTERNAL_SERVER_ERROR, e.getMessage))
+  def debug(msg: => String) {
+    if (log.isDebugEnabled) log.debug("[{}]: {}", uri, msg)
   }
 
-  def safeProcess(endpoint: RequestResponse, async: Context) {
-    try self ! Complete(endpoint(async.context.getRequest))
-    catch InternalErrorOnException(async.url)
-  }
-
-  def safeProcess(actor: ActorRef, async: Context) {
-    try actor ! async.context.getRequest
-    catch InternalErrorOnException(async.url)
+  def error(e: => Throwable) {
+    if (log.isDebugEnabled) log.error(e, "{}: {}", uri, e)
+    else log.error("[{}]: {}", uri, e)
   }
 }
 
@@ -119,8 +105,8 @@ object Async {
   case object AboutToComplete extends State
 
   sealed trait Data
-  case class Context(context: AsyncContext, url: String) extends Data
-  case object Empty extends Data
+  case class AsyncData(context: AsyncContext) extends Data
+  case object NoData extends Data
 
   case class Complete(func: FutureResponse)
 }

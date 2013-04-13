@@ -3,11 +3,11 @@
 <table border="0">
   <tr>
     <td>Scala version: </td>
-    <td>2.10.0</td>
+    <td>2.10.1</td>
   </tr>
   <tr>
     <td>Akka version: </td>
-    <td>2.1.0</td>
+    <td>2.1.2</td>
   </tr>
 </table>
 
@@ -147,6 +147,6 @@ Most of the properties you can retrieve from `HttpExtension.scala`.
     <dependency>
         <groupId>com.thenewmotion.akka</groupId>
         <artifactId>akka-http_2.10</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.3</version>
     </dependency>
 ```

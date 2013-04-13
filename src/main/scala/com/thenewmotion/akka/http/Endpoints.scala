@@ -1,15 +1,20 @@
 package com.thenewmotion.akka.http
 
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
-import akka.actor.{ActorSystem, ActorRef}
-import akka.agent.Agent
+import akka.actor._
+import akka.actor.SupervisorStrategy.Stop
+import javax.servlet.{ServletRequest, ServletResponse, AsyncContext}
+import akka.actor.OneForOneStrategy
+import scala.util.{Success, Failure, Try}
 
 /**
  * @author Yaroslav Klymko
  */
 object Endpoints {
-
   type RequestResponse = (HttpServletRequest => FutureResponse)
+
+  case class Attach(name: String, provider: Provider)
+  case class Detach(name: String)
 
   object RequestResponse {
     def apply(func: HttpServletRequest => FutureResponse): RequestResponse = func
@@ -36,25 +41,34 @@ object Endpoints {
   implicit def func2Endpoint(func: RequestResponse): Endpoint = Endpoint(func)
 }
 
-trait EndpointFinder {
-  def find(url: String): Option[Endpoints.Endpoint]
-}
-
-class EndpointsAgent(system: ActorSystem)
-  extends Agent(Map[String, Endpoints.Provider](), system)
-  with EndpointFinder {
+class EndpointsActor extends Actor {
 
   import Endpoints._
 
-  def attach(name: String, p: Provider) {
-    send(_ + (name -> p))
+  implicit def res2HttpRes(res: ServletResponse) = res.asInstanceOf[HttpServletResponse]
+  implicit def req2HttpReq(req: ServletRequest) = req.asInstanceOf[HttpServletRequest]
+
+  var endpoints = Map[String, Provider]()
+
+  override def supervisorStrategy() = OneForOneStrategy() {
+    case _: Exception => Stop
   }
 
-  def detach(name: String) {
-    send(_ - name)
-  }
+  def receive = {
+    case Attach(name, provider) =>
+      endpoints = endpoints + (name -> provider)
 
-  def find(url: String) = get().values.collectFirst {
-    case provider if provider.isDefinedAt(url) => provider.apply(url)
+    case Detach(name) => endpoints = endpoints - name
+
+    case async: AsyncContext =>
+      Try(async.getRequest.getRequestURI) match {
+        case Failure(e) =>
+        case Success(uri) =>
+          val provider = endpoints.values.fold[Provider](PartialFunction.empty)(_.orElse(_))
+          val props = Props(new AsyncActor(provider, uri)).withDispatcher("akka.http.actor.dispatcher")
+          val actor = context.actorOf(props)
+          async.addListener(new Listener(actor, context.system))
+          actor ! async
+      }
   }
 }

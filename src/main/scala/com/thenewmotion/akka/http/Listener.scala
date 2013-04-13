@@ -30,6 +30,7 @@ class Listener(actor: ActorRef, system: ActorSystem) extends AsyncListener {
     val res = asyncContext.getResponse.asInstanceOf[HttpServletResponse]
     val (name, value) = HttpExtension(system).ExpiredHeader
     res.addHeader(name, value)
+    res.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE)
     asyncContext.complete()
   }
 

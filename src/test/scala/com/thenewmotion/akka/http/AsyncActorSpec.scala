@@ -36,13 +36,14 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
     }
 
     def start(e: Option[Endpoint] = None) {
-      val endpoints = new EndpointFinder {
-        def find(url: String) = e
+      val provider = new Provider {
+        def apply(v1: String) = e.get
+        def isDefinedAt(x: String) = e.isDefined
       }
 
-      actorRef = TestFSMRef(new AsyncActor(endpoints))
+      actorRef = TestFSMRef(new AsyncActor(provider,""))
       actorRef.stateName mustEqual AboutToProcess
-      actorRef.stateData mustEqual Empty
+      actorRef.stateData mustEqual NoData
       actorRef ! asyncContext
     }
 
@@ -118,7 +119,7 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
 
     "respond with 'Status Code 500' when exception while processing request" >> new HttpContext {
       start(RequestResponse(req => throw new Exception))
-      there was one(res).setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
+      there was one(res).sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
       there was one(asyncContext).complete()
     }
 
@@ -126,7 +127,7 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
       start(RequestResponse(FutureResponse {
         res => throw new Exception
       }))
-      there was one(res).sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, null)
+      there was one(res).sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
       there was one(asyncContext).complete()
     }
 
@@ -142,25 +143,6 @@ class AsyncActorSpec extends SpecificationWithJUnit with Mockito {
       start(RequestResponse(future))
       there was one(asyncContext).complete()
       result must beTrue
-    }
-
-    "call `onComplete` with Some(Exception) if completed unsuccessfully" >> new HttpContext {
-      asyncContext.complete() throws (new RuntimeException)
-
-      var result = true
-
-      val future = new FutureResponse {
-        def apply(res: HttpServletResponse) {}
-
-        def onComplete = {
-          case Some(_: RuntimeException) => result = false
-        }
-      }
-
-      start(RequestResponse(future))
-
-      there was one(asyncContext).complete()
-      result must beFalse
     }
   }
 }
